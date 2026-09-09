@@ -30,11 +30,16 @@ export interface Cell {
   ringAngle: number;
   ringRadius: number;
 }
-export interface FogField {
-  densities: Float32Array;
-  width: number;
-  height: number;
+export interface FogTexture {
+  blob: Blob;
   viewport: Viewport;
+}
+export interface FogRaster {
+  brightnessBase: number;
+  brightnessRange: number;
+  densityOffset: number;
+  densityRange: number;
+  color: readonly [number, number, number];
 }
 export interface SceneFrame {
   seconds: number;
@@ -53,7 +58,10 @@ export interface SceneController {
   refresh(): void;
   resize(viewport: Viewport): void;
   subscribeFrame(listener: (frame: SceneFrame) => void): () => void;
-  subscribeFog(listener: (field: FogField) => void): () => void;
+  subscribeFog(
+    listener: (texture: FogTexture) => void,
+    raster: FogRaster,
+  ): () => void;
   subscribePresentation(
     listener: (state: ScenePresentation) => void,
   ): () => void;

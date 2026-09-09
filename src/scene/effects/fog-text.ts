@@ -1,6 +1,6 @@
 import { fogPosition } from "../atmosphere/motion";
 import { FOG } from "../config";
-import type { FogField, SceneController } from "../types";
+import type { FogTexture, SceneController } from "../types";
 import { activeFogTextPreset } from "./fog-text-presets";
 
 /** Presentation adapter: the menu consumes scene data, never controls the sky. */
@@ -18,28 +18,28 @@ export function attachFogText(
     scene.markEffectsSettled();
     return () => {};
   }
-  const canvas = document.createElement("canvas"),
-    context = canvas.getContext("2d");
-  if (!context) {
-    scene.markEffectsSettled();
-    return () => {};
-  }
   const events = new AbortController();
   const preset = activeFogTextPreset;
   nav.style.setProperty("--fog-text-blend", preset.blendMode);
   nav.style.setProperty("--fog-text-opacity", String(preset.opacity));
-  let field: FogField | undefined,
+  let field: FogTexture | undefined,
     seconds = 0,
     sampledAt = performance.now();
   let mode = scene.getMode(),
     animationFrame = 0,
     alignmentFrame = 0,
-    revealFrame = 0,
-    textureVersion = 0;
+    revealFrame = 0;
   let textureUrl: string | undefined,
     disposed = false,
     presentationRevealed = false,
     presentationMoving = false;
+  const clearTexture = () => {
+    field = undefined;
+    if (textureUrl) URL.revokeObjectURL(textureUrl);
+    textureUrl = undefined;
+    nav.style.removeProperty("--fog-image");
+    nav.style.removeProperty("--fog-size");
+  };
   const labels = [...nav.querySelectorAll<HTMLElement>(".nav-label")];
   const align = () => {
     if (disposed) return;
@@ -69,12 +69,6 @@ export function attachFogText(
     nav.style.setProperty("--fog-x", `${x - field.viewport.width * 0.32}px`);
     nav.style.setProperty("--fog-y", `${y - field.viewport.height * 0.32}px`);
   };
-  const yieldForTexture = () =>
-    new Promise<void>((resolve) => {
-      if ("requestIdleCallback" in window)
-        window.requestIdleCallback(() => resolve(), { timeout: 32 });
-      else window.setTimeout(resolve, 0);
-    });
   const reveal = (immediate = false) => {
     if (
       !presentationRevealed ||
@@ -97,32 +91,10 @@ export function attachFogText(
       });
     });
   };
-  const renderTexture = async (next: FogField, version: number) => {
+  const renderTexture = (next: FogTexture) => {
     try {
-      canvas.width = next.width;
-      canvas.height = next.height;
-      const pixels = context.createImageData(next.width, next.height);
-      for (let i = 0; i < next.densities.length; i++) {
-        const offset = i * 4;
-        preset.writePixel(pixels.data, offset, next.densities[i]);
-        if ((i & 16383) === 16383) {
-          await yieldForTexture();
-          if (disposed || version !== textureVersion) return;
-        }
-      }
-      context.putImageData(pixels, 0, 0);
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/png"),
-      );
-      if (disposed || version !== textureVersion || mobileEffects.matches)
-        return;
-      if (!blob) {
-        scene.markEffectsSettled();
-        return;
-      }
-      canvas.width = 1;
-      canvas.height = 1;
-      const nextUrl = URL.createObjectURL(blob);
+      if (disposed || mobileEffects.matches) return;
+      const nextUrl = URL.createObjectURL(next.blob);
       if (textureUrl) URL.revokeObjectURL(textureUrl);
       textureUrl = nextUrl;
       field = next;
@@ -136,7 +108,7 @@ export function attachFogText(
       scene.markEffectsSettled();
       reveal();
     } catch (error) {
-      if (disposed || version !== textureVersion) return;
+      if (disposed) return;
       console.warn("Navigation fog unavailable", error);
       scene.markEffectsSettled();
     }
@@ -163,10 +135,12 @@ export function attachFogText(
     }
     if (mode !== "playing" && document.body.dataset.view === "menu") position();
   };
-  const unsubscribeFog = scene.subscribeFog((next) => {
-    const version = ++textureVersion;
-    void renderTexture(next, version);
-  });
+  const unsubscribeFog = scene.subscribeFog(
+    (next) => {
+      renderTexture(next);
+    },
+    preset.raster,
+  );
   const unsubscribeFrame = scene.subscribeFrame((frame) => {
     if (frame.mode !== "source") seconds = frame.seconds;
     sampledAt = performance.now();
@@ -192,7 +166,7 @@ export function attachFogText(
       if (mobileEffects.matches) {
         cancelAnimationFrame(revealFrame);
         revealFrame = 0;
-        field = undefined;
+        clearTexture();
         delete nav.dataset.fogVisible;
       }
       syncAnimation();
@@ -206,22 +180,19 @@ export function attachFogText(
   document.fonts.ready.then(align);
   return () => {
     disposed = true;
-    textureVersion++;
     cancelAnimationFrame(animationFrame);
     cancelAnimationFrame(alignmentFrame);
     cancelAnimationFrame(revealFrame);
     delete nav.dataset.fogVisible;
     nav.style.removeProperty("--fog-text-blend");
     nav.style.removeProperty("--fog-text-opacity");
-    nav.style.removeProperty("--fog-image");
-    nav.style.removeProperty("--fog-size");
+    clearTexture();
     nav.style.removeProperty("--fog-x");
     nav.style.removeProperty("--fog-y");
     labels.forEach((label) => {
       label.style.removeProperty("--label-x");
       label.style.removeProperty("--label-y");
     });
-    if (textureUrl) URL.revokeObjectURL(textureUrl);
     observer.disconnect();
     events.abort();
     unsubscribeFrame();

@@ -9,7 +9,8 @@ import {
   sceneTransitionDuration,
 } from "./presentation";
 import type {
-  FogField,
+  FogRaster,
+  FogTexture,
   SceneController,
   SceneFrame,
   SceneMode,
@@ -31,9 +32,10 @@ export function createScene(host: HTMLElement): SceneController {
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const mobileEffects = matchMedia("(max-width: 600px)");
   const frameListeners = new Set<(frame: SceneFrame) => void>();
-  const fogListeners = new Set<(field: FogField) => void>();
+  const fogListeners = new Set<(texture: FogTexture) => void>();
   const presentationListeners = new Set<(state: ScenePresentation) => void>();
-  let field: FogField | null = null;
+  let field: FogTexture | null = null;
+  let fogRaster: FogRaster | null = null;
   let requestedFogViewport: Viewport | null = null;
   let fogRequestVersion = 0;
   let frame: SceneFrame = {
@@ -127,6 +129,7 @@ export function createScene(host: HTMLElement): SceneController {
     if (
       cancellation.signal.aborted ||
       mobileEffects.matches ||
+      !fogRaster ||
       fogListeners.size === 0
     )
       return;
@@ -138,7 +141,7 @@ export function createScene(host: HTMLElement): SceneController {
       return;
     requestedFogViewport = requestedViewport;
     const requestVersion = ++fogRequestVersion;
-    void fog.resize(requestedViewport).then((nextField) => {
+    void fog.resize(requestedViewport, fogRaster).then((nextField) => {
       if (cancellation.signal.aborted) return;
       const isLatest = requestVersion === fogRequestVersion;
       if (isLatest) requestedFogViewport = null;
@@ -290,12 +293,24 @@ export function createScene(host: HTMLElement): SceneController {
         frameListeners.delete(listener);
       };
     },
-    subscribeFog(listener) {
+    subscribeFog(listener, raster) {
+      const startsSubscription = fogListeners.size === 0;
       fogListeners.add(listener);
-      if (field) listener(field);
-      else requestFog();
+      if (startsSubscription) {
+        fogRaster = raster;
+        field = null;
+        requestedFogViewport = null;
+        fogRequestVersion++;
+        requestFog();
+      } else if (field) listener(field);
       return () => {
         fogListeners.delete(listener);
+        if (fogListeners.size === 0) {
+          fogRaster = null;
+          field = null;
+          requestedFogViewport = null;
+          fogRequestVersion++;
+        }
       };
     },
     subscribePresentation(listener) {

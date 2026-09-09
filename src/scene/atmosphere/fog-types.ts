@@ -1,12 +1,21 @@
-import type { Viewport } from "../types";
+import type { FogRaster, Viewport } from "../types";
 
 export interface FogRequest {
   id: number;
   viewport: Viewport;
+  raster: FogRaster;
 }
 
-export interface FogResponse extends FogRequest {
-  width: number;
-  height: number;
-  buffer: ArrayBuffer;
-}
+export type FogResponse =
+  | {
+      type: "ready";
+      id: number;
+      viewport: Viewport;
+      blob: Blob;
+    }
+  | {
+      type: "failed";
+      id: number;
+      viewport: Viewport;
+      reason: string;
+    };

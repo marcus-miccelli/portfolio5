@@ -1,14 +1,10 @@
-import { smooth } from "../config";
+import type { FogRaster } from "../types";
 
 export interface FogTextPreset {
   readonly name: "monochrome" | "chromatic";
   readonly blendMode: "luminosity" | "screen";
   readonly opacity: number;
-  writePixel(target: Uint8ClampedArray, offset: number, density: number): void;
-}
-
-function invertedBrightness(density: number): number {
-  return Math.round(250 - 174 * smooth((density - 0.008) / 0.034));
+  readonly raster: FogRaster;
 }
 
 /**
@@ -19,12 +15,12 @@ export const monochromeFogText: FogTextPreset = {
   name: "monochrome",
   blendMode: "luminosity",
   opacity: 0.78,
-  writePixel(target, offset, density) {
-    const value = invertedBrightness(density);
-    target[offset] = value;
-    target[offset + 1] = value;
-    target[offset + 2] = value;
-    target[offset + 3] = 255;
+  raster: {
+    brightnessBase: 250,
+    brightnessRange: 174,
+    densityOffset: 0.008,
+    densityRange: 0.034,
+    color: [1, 1, 1],
   },
 };
 
@@ -36,12 +32,12 @@ export const chromaticFogText: FogTextPreset = {
   name: "chromatic",
   blendMode: "screen",
   opacity: 0.82,
-  writePixel(target, offset, density) {
-    const value = invertedBrightness(density);
-    target[offset] = Math.round(value * 0.42);
-    target[offset + 1] = Math.round(value * 0.67);
-    target[offset + 2] = value;
-    target[offset + 3] = 255;
+  raster: {
+    brightnessBase: 250,
+    brightnessRange: 174,
+    densityOffset: 0.008,
+    densityRange: 0.034,
+    color: [0.42, 0.67, 1],
   },
 };
 

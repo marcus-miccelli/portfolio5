@@ -1,4 +1,4 @@
-import type { FogField, Viewport } from "../types";
+import type { FogRaster, FogTexture, Viewport } from "../types";
 import type { FogResponse } from "./fog-types";
 
 export function createFogField() {
@@ -8,7 +8,8 @@ export function createFogField() {
     | {
         id: number;
         viewport: Viewport;
-        resolve: (field: FogField | null) => void;
+        raster: FogRaster;
+        resolve: (texture: FogTexture | null) => void;
       }
     | undefined;
   let queued: typeof active;
@@ -17,7 +18,11 @@ export function createFogField() {
 
   const dispatch = (request: NonNullable<typeof active>) => {
     active = request;
-    worker?.postMessage({ id: request.id, viewport: request.viewport });
+    worker?.postMessage({
+      id: request.id,
+      viewport: request.viewport,
+      raster: request.raster,
+    });
   };
   const startWorker = () => {
     try {
@@ -32,12 +37,20 @@ export function createFogField() {
       if (!active || event.data.id !== active.id || destroyed) return;
       const { resolve } = active;
       active = undefined;
-      resolve({
-        width: event.data.width,
-        height: event.data.height,
-        viewport: event.data.viewport,
-        densities: new Float32Array(event.data.buffer),
-      });
+      if (event.data.type === "ready") {
+        resolve({
+          blob: event.data.blob,
+          viewport: event.data.viewport,
+        });
+      } else {
+        console.warn(`Navigation fog unavailable: ${event.data.reason}`);
+        unavailable = true;
+        resolve(null);
+        queued?.resolve(null);
+        queued = undefined;
+        worker?.terminate();
+        worker = undefined;
+      }
       if (queued) {
         const next = queued;
         queued = undefined;
@@ -59,11 +72,11 @@ export function createFogField() {
   };
 
   return {
-    resize(viewport: Viewport): Promise<FogField | null> {
+    resize(viewport: Viewport, raster: FogRaster): Promise<FogTexture | null> {
       if (destroyed || unavailable) return Promise.resolve(null);
       if (!worker && !startWorker()) return Promise.resolve(null);
       return new Promise((resolve) => {
-        const request = { id: ++requestId, viewport, resolve };
+        const request = { id: ++requestId, viewport, raster, resolve };
         if (active) {
           queued?.resolve(null);
           queued = request;
