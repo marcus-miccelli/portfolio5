@@ -2,9 +2,7 @@ import { artworkFromElement } from "./artwork";
 import { createClock } from "./clock";
 import { MOTION } from "./config";
 import { compose } from "./layout";
-import { createGeometry } from "./planet/geometry";
 import { createGpuPlanetRenderer } from "./planet/gpu-renderer";
-import { createTextRenderer } from "./planet/text-renderer";
 import { createFogField } from "./atmosphere/fog-field";
 import {
   createPresentationReveal,
@@ -235,7 +233,11 @@ export function createScene(host: HTMLElement): SceneController {
         destroyPlanet = undefined;
       }
 
-      await document.fonts.load('32px "Recovered Planet"');
+      const [{ createGeometry }, { createTextRenderer }] = await Promise.all([
+        import("./planet/geometry"),
+        import("./planet/text-renderer"),
+        document.fonts.load('32px "Recovered Planet"'),
+      ]);
       if (cancellation.signal.aborted) return;
       const geometry = createGeometry(artwork);
       const render = createTextRenderer(
