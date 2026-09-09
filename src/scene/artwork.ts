@@ -59,7 +59,7 @@ export function sourceMarkup(data: Artwork): string {
           const color = data.colors[y][x];
           const variant = String(data.variants[y][x]).padStart(2, "0");
           const hidden = y === 62 && x === 269 ? ";visibility:hidden" : "";
-          return `<span data-cell="${color}${variant}" style="color:#${color};font-feature-settings:'g0${variant}' 1${hidden}">${char}</span>`;
+          return `<span style="color:#${color};font-feature-settings:'g0${variant}' 1${hidden}">${char}</span>`;
         })
         .join(""),
     )
@@ -85,8 +85,12 @@ export function artworkFromElement(element: HTMLPreElement): {
     for (let column = 0; column < rows[row].length; column++) {
       if (rows[row][column] === " ") continue;
       const span = spans[spanIndex++];
-      const values = /^([\da-f]{6})(\d{2})$/i.exec(span?.dataset.cell ?? "");
-      if (!values)
+      const values =
+        /^color:#([\da-f]{6});font-feature-settings:'g0(\d{2})' 1(;visibility:hidden)?$/i.exec(
+          span?.getAttribute("style") ?? "",
+        );
+      const shouldBeHidden = row === 62 && column === 269;
+      if (!values || Boolean(values[3]) !== shouldBeHidden)
         throw new Error(`Invalid prerendered artwork cell ${row}:${column}`);
       colors[row][column] = values[1];
       variants[row][column] = Number(values[2]);
