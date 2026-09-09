@@ -1,0 +1,91 @@
+---
+import type { CollectionEntry } from "astro:content";
+import type { ProjectLinkKind } from "../../content/project-links";
+import ProjectLinkIcon from "./ProjectLinkIcon.astro";
+interface Props {
+  project: CollectionEntry<"projects">;
+}
+const { project } = Astro.props;
+const { title, summary, tags, badge, media: preview, links } = project.data;
+
+const destinationKind = (link: (typeof links)[number]): ProjectLinkKind => {
+  if (link.kind) return link.kind;
+  const host = new URL(link.href).hostname;
+  if (host === "github.com") return "github";
+  if (host === "devpost.com") return "devpost";
+  if (host.endsWith(".itch.io") || host === "itch.io") return "itch";
+  if (host === "marketplace.visualstudio.com") return "vscode";
+  return "website";
+};
+---
+
+<li
+  class="project-tile"
+  data-project-id={project.id}
+  data-project-tags={tags.map((tag) => tag.toLowerCase()).join("|")}
+>
+  <article class="project-card">
+    <div class="project-card__heading">
+      <h2>{title}</h2>
+      <div
+        class="project-card__links"
+        role="group"
+        aria-label={`${title} links`}
+      >
+        {
+          links.map((link) => (
+            <a
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${link.label} — opens in a new tab`}
+              data-label={link.label}
+            >
+              <ProjectLinkIcon kind={destinationKind(link)} />
+            </a>
+          ))
+        }
+      </div>
+      <span class="project-card__drag-handle" aria-hidden="true"></span>
+    </div>
+    <div class="project-card__media">
+      <div
+        class:list={[
+          "project-card__preview",
+          !preview && "project-card__preview--empty",
+        ]}
+      >
+        {
+          preview?.type === "video" ? (
+            <video
+              src={preview.src}
+              poster={preview.poster}
+              aria-label={preview.alt}
+              muted
+              loop
+              playsinline
+              preload="metadata"
+            />
+          ) : preview?.type === "image" ? (
+            <img
+              src={preview.src}
+              alt={preview.alt}
+              loading="lazy"
+              decoding="async"
+              draggable="false"
+            />
+          ) : (
+            <span aria-hidden="true">{title}</span>
+          )
+        }
+      </div>
+    </div>
+    <div class="project-card__body">
+      <p>{summary}</p>
+      {badge && <span class="project-card__badge">{badge}</span>}
+      <ul class="project-card__tags" aria-label={`${title} technologies`}>
+        {tags.map((tag) => <li>{tag}</li>)}
+      </ul>
+    </div>
+  </article>
+</li>

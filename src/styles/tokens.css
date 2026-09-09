@@ -1,0 +1,26 @@
+:root {
+  color-scheme: dark;
+  --background: #0a0a0f;
+  --text: #e0e2e7;
+  --muted: #979ca9;
+  --line: #ffffff1f;
+  --accent: #b4c8ec;
+  --font: "IBM Plex Mono", ui-monospace, monospace;
+  --gutter: clamp(24px, 4vw, 80px);
+  --reading-width: 48rem;
+  --panel-rail-width: 92px;
+  --motion-fast: 180ms;
+  --view-transition-duration: 240ms;
+  --view-transition-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --scene-reveal-duration: 700ms;
+  --scene-reveal-easing: linear;
+  --site-identity-top: calc(max(18px, env(safe-area-inset-top)) + 5px);
+  --site-name-font-size: clamp(22.667px, 2.667vw, 28px);
+  --site-name-line-height: clamp(38.533px, 4.533vw, 47.6px);
+  --site-identity-width: clamp(204px, 24vw, 252px);
+  --site-identity-gap: 2px;
+  --social-island-top: calc(
+    var(--site-identity-top) + var(--site-name-line-height) +
+      var(--site-identity-gap)
+  );
+}

@@ -1,0 +1,155 @@
+.social-island {
+  position: relative;
+  display: flex;
+  width: 100%;
+  gap: 0;
+  margin-top: var(--site-identity-gap);
+  padding: 0;
+  border: 1px solid #ffffff26;
+  border-radius: 2px 2px 12px 12px;
+  background: transparent;
+  opacity: 0.72;
+  transition:
+    opacity var(--motion-fast),
+    border-color var(--motion-fast);
+}
+.social-island:hover,
+.social-island:focus-within {
+  border-color: #ffffff42;
+  opacity: 1;
+}
+html[data-scene-hue-transition="true"] .social-island {
+  transition:
+    opacity var(--motion-fast),
+    border-color var(--motion-fast),
+    filter var(--scene-reveal-duration) linear;
+}
+.social-island__action {
+  position: relative;
+  display: grid;
+  flex: 1 1 25%;
+  width: auto;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.68;
+  text-decoration: none;
+  transition:
+    opacity 130ms ease,
+    background 130ms ease;
+}
+.social-island__action:first-child {
+  border-radius: 1px 0 0 11px;
+}
+.social-island__action[data-copy-email] {
+  border-radius: 0 1px 11px 0;
+}
+.social-island__action:hover,
+.social-island__action:focus-visible {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  opacity: 1;
+}
+.social-island__action svg,
+.social-island__text-icon {
+  --icon-offset-x: 0px;
+  --icon-offset-y: 0px;
+  width: 16px;
+  height: 16px;
+  transform: translate(var(--icon-offset-x), var(--icon-offset-y));
+  transition: transform 130ms ease;
+}
+.social-island__action svg {
+  display: block;
+}
+.social-island__action .social-island__icon--linkedin {
+  --icon-offset-x: 0.5px;
+}
+.social-island__action .social-island__icon--github {
+  width: 18px;
+  height: 18px;
+}
+.social-island__action .social-island__icon--email {
+  --icon-offset-y: 1px;
+  width: 17px;
+  height: 20px;
+}
+.social-island__text-icon {
+  --icon-offset-x: -3px;
+  --icon-offset-y: -4px;
+  display: grid;
+  place-items: center;
+  font: 600 20px/1 "IBM Plex Mono Variable", var(--font);
+  letter-spacing: -0.08em;
+}
+.social-island__action:hover svg,
+.social-island__action:focus-visible svg,
+.social-island__action:hover .social-island__text-icon,
+.social-island__action:focus-visible .social-island__text-icon {
+  transform: translate(
+    var(--icon-offset-x),
+    calc(var(--icon-offset-y) - 1px)
+  );
+}
+.social-island__label {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #0a0a0feb;
+  color: #c5c9d2;
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -3px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+.social-island__action:hover > .social-island__label,
+.social-island__action:focus-visible > .social-island__label {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+@media (max-width: 600px) {
+  .social-island {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    right: auto;
+    left: 50%;
+    z-index: 3;
+    width: auto;
+    margin-top: 0;
+    padding: 0;
+    border-radius: 999px;
+    filter: hue-rotate(var(--scene-hue, 0deg));
+    transform: translateX(-50%);
+    will-change: filter;
+  }
+  .social-island__action {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+  }
+  .social-island__action:first-child {
+    border-radius: 999px 0 0 999px;
+  }
+  .social-island__action[data-copy-email] {
+    border-radius: 0 999px 999px 0;
+  }
+}
+@media (forced-colors: active) {
+  .social-island {
+    background: Canvas;
+    border-color: CanvasText;
+    opacity: 1;
+  }
+}

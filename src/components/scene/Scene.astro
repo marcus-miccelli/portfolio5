@@ -1,0 +1,67 @@
+---
+import rawArtwork from "../../scene/data/planet.json";
+import { parseArtwork, sourceMarkup } from "../../scene/artwork";
+import { ART, LAYOUT } from "../../scene/config";
+const markup = sourceMarkup(parseArtwork(rawArtwork));
+const globeX = ART.globe.x;
+const globeY = ART.globe.y;
+const globeDiameter = ART.globe.radius * 2;
+const horizontalCenter = LAYOUT.horizontalCenter;
+const verticalCenter = LAYOUT.verticalCenter;
+const aspectStart = LAYOUT.aspectStart;
+const aspectRange = LAYOUT.aspectRange;
+const portraitHeight = LAYOUT.portraitHeight;
+const landscapeHeightGain = LAYOUT.landscapeHeightGain;
+const widthLimit = LAYOUT.widthLimit;
+const blendPower = LAYOUT.blendPower;
+---
+
+<script
+  define:vars={{
+    globeX,
+    globeY,
+    globeDiameter,
+    horizontalCenter,
+    verticalCenter,
+    aspectStart,
+    aspectRange,
+    portraitHeight,
+    landscapeHeightGain,
+    widthLimit,
+    blendPower,
+  }}
+>
+  (() => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const ratio = Math.max(
+      0,
+      Math.min(1, (width / height - aspectStart) / aspectRange),
+    );
+    const landscape = ratio * ratio * (3 - 2 * ratio);
+    const preferred =
+      height * (portraitHeight + landscapeHeightGain * landscape);
+    const diameter =
+      preferred /
+      (1 + (preferred / (width * widthLimit)) ** blendPower) **
+        (1 / blendPower);
+    const scale = diameter / globeDiameter;
+    const root = document.documentElement.style;
+    root.setProperty("--initial-planet-scale", String(scale));
+    root.setProperty(
+      "--initial-planet-x",
+      `${width * horizontalCenter - globeX * scale}px`,
+    );
+    root.setProperty(
+      "--initial-planet-y",
+      `${height * verticalCenter - globeY * scale}px`,
+    );
+  })();
+</script>
+
+<orbit-scene aria-hidden="true">
+  <div class="universe">
+    <canvas class="planet-render" data-planet-render aria-hidden="true"></canvas>
+    <pre class="planet" set:html={markup} />
+  </div>
+</orbit-scene>

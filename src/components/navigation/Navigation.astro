@@ -1,0 +1,23 @@
+---
+const routes = [
+  { view: "about", label: "about me" },
+  { view: "projects", label: "projects" },
+  { view: "gallery", label: "gallery" },
+];
+---
+
+<nav class="primary-nav" aria-label="Primary">
+  {
+    routes.map(({ view, label }) => (
+      <button type="button" data-nav-view={view}>
+        <span class="nav-label">
+          <span class="nav-base">{label}</span>
+          <span class="nav-fog" aria-hidden="true">{label}</span>
+        </span>
+        <span class="nav-reveal" aria-hidden="true">
+          {label}
+        </span>
+      </button>
+    ))
+  }
+</nav>

@@ -1,0 +1,144 @@
+---
+import Scene from "../components/scene/Scene.astro";
+import Navigation from "../components/navigation/Navigation.astro";
+import SocialIsland from "../components/social/SocialIsland.astro";
+import "../styles/global.css";
+import "../styles/scene.css";
+import "../components/navigation/navigation.css";
+import "../components/social/social-island.css";
+interface Props {
+  title?: string;
+  description?: string;
+  composition?: "landing" | "content";
+  image?: string;
+}
+const {
+  title = "Marcus — Portfolio",
+  description = "A portfolio in text, motion, and space.",
+  composition = "content",
+  image,
+} = Astro.props;
+const canonical = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site).href
+  : undefined;
+const socialImage =
+  image && Astro.site ? new URL(image, Astro.site).href : undefined;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0a0a0f" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    {socialImage && <meta property="og:image" content={socialImage} />}
+    <meta
+      name="twitter:card"
+      content={socialImage ? "summary_large_image" : "summary"}
+    />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {socialImage && <meta name="twitter:image" content={socialImage} />}
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link
+      rel="preload"
+      href="/fonts/planet.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/IBMPlexMono-Medium.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    {
+      composition === "landing" && (
+        <link
+          rel="preload"
+          href="/fonts/IBMPlexMono-Variable-Latin1.woff2"
+          as="font"
+          type="font/woff2"
+          crossorigin
+        />
+      )
+    }
+  </head>
+  <body
+    data-composition={composition}
+    data-view={composition === "landing" ? "menu" : undefined}
+  >
+    <a class="skip-link" href="#content">Skip to content</a>
+    <Scene />
+    <div class="site-identity">
+      <p class="lede site-name">marcus miccelli</p>
+      <SocialIsland />
+    </div>
+    {
+      composition === "content" && (
+        <a class="panel-back" href="/" aria-label="Back to main menu">
+          <span aria-hidden="true">&lt;&lt;</span>
+        </a>
+      )
+    }
+    {
+      composition === "landing" && (
+        <button
+          class="panel-back"
+          data-shell-back
+          type="button"
+          aria-label="Back to main menu"
+          hidden
+        >
+          <span aria-hidden="true">&lt;&lt;</span>
+        </button>
+      )
+    }
+    <main
+      id="content"
+      tabindex="-1"
+      class:list={[
+        composition === "landing" ? "landing-content" : "page-content",
+      ]}
+    >
+      <slot />
+    </main>
+    {
+      composition === "landing" && (
+        <>
+          <Navigation />
+          <div class="menu-notch" aria-hidden="true">
+            <kbd>↑</kbd>
+            <kbd>↓</kbd>
+            <span>navigate</span>
+            <kbd>enter</kbd>
+            <span>select</span>
+          </div>
+          <div
+            class="scene-controls"
+            role="group"
+            aria-label="Animation controls"
+            hidden
+          >
+            <button data-motion type="button">Pause</button>
+            <span aria-hidden="true">/</span>
+            <button data-source type="button">Source frame</button>
+          </div>
+        </>
+      )
+    }
+    <p class="scene-status sr-only" role="status"></p>
+    <script>
+      import "../bootstrap";
+    </script>
+  </body>
+</html>

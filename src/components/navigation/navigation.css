@@ -1,0 +1,156 @@
+@font-face {
+  font-family: "IBM Plex Mono Variable";
+  src: url("/fonts/IBMPlexMono-Variable-Latin1.woff2")
+    format("woff2-variations");
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+}
+/* No fixed/opacity/isolation ancestor: glyph luminosity must see the scene. */
+.primary-nav {
+  position: absolute;
+  right: max(var(--gutter), env(safe-area-inset-right));
+  bottom: max(clamp(76px, 9vh, 112px), env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.08em;
+  font:
+    500 clamp(40px, min(7vw, 11svh), 112px) / 1.12 "IBM Plex Mono Variable",
+    var(--font);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 160ms ease,
+    visibility 0s linear;
+}
+.primary-nav::before {
+  content: "";
+  position: absolute;
+  inset: -0.3em -0.22em;
+}
+[data-view]:not([data-view="menu"]) .primary-nav {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    visibility 0s linear 160ms;
+}
+.primary-nav button {
+  position: relative;
+  display: block;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  font-weight: 500;
+  cursor: pointer;
+}
+.primary-nav button:focus-visible {
+  outline: none;
+}
+[data-composition="landing"] .primary-nav button {
+  letter-spacing: 0;
+  transform: translateY(var(--nav-push-y, 0));
+  transform-origin: right center;
+  transition:
+    font-weight 150ms ease-in-out,
+    letter-spacing 150ms ease-in-out,
+    transform 150ms ease-in-out;
+}
+[data-composition="landing"] .primary-nav button.is-selected {
+  letter-spacing: 0.025em;
+  font-weight: 700;
+  transform: translate(0.08em, var(--nav-push-y, 0));
+}
+.nav-label {
+  position: relative;
+  display: block;
+  margin-bottom: -0.14em;
+  padding-bottom: 0.14em;
+}
+.nav-base {
+  display: block;
+  color: #82afe3;
+  mix-blend-mode: difference;
+  filter: hue-rotate(var(--scene-hue, 0deg));
+  opacity: 1;
+  transition: opacity var(--scene-reveal-duration)
+    var(--scene-reveal-easing);
+}
+.nav-fog {
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  background: var(--fog-image) no-repeat;
+  background-size: var(--fog-size);
+  background-position: calc(var(--fog-x) - var(--label-x))
+    calc(var(--fog-y) - var(--label-y));
+  background-clip: text;
+  -webkit-background-clip: text;
+  opacity: 0;
+  mix-blend-mode: var(--fog-text-blend, luminosity);
+  filter: hue-rotate(var(--scene-hue, 0deg));
+  transition: opacity var(--scene-reveal-duration)
+    var(--scene-reveal-easing);
+}
+.primary-nav[data-fog-visible="true"] .nav-base {
+  opacity: 0;
+}
+.primary-nav[data-fog-visible="true"] .nav-fog {
+  opacity: var(--fog-text-opacity, 0.78);
+}
+html[data-scene-hue-transition="true"] .nav-base,
+html[data-scene-hue-transition="true"] .nav-fog {
+  transition:
+    opacity var(--scene-reveal-duration) var(--view-transition-easing),
+    filter var(--scene-reveal-duration) linear;
+}
+.nav-reveal {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: #e6e6e6;
+  mix-blend-mode: luminosity;
+  opacity: 0;
+  transition: opacity 150ms ease-in-out;
+}
+.primary-nav button.is-selected .nav-reveal {
+  opacity: 0.38;
+}
+@media (max-height: 450px) {
+  [data-composition="landing"] .primary-nav {
+    bottom: 64px;
+    font-size: clamp(28px, 9svh, 40px);
+    gap: 0.04em;
+  }
+}
+@media (max-width: 600px) {
+  .primary-nav[data-fog-visible="true"] .nav-base {
+    opacity: 1;
+  }
+  .nav-fog {
+    display: none;
+  }
+}
+@media (forced-colors: active) {
+  .primary-nav button:focus-visible {
+    outline: 1px solid ButtonText;
+    outline-offset: 0.08em;
+  }
+  .primary-nav .nav-base {
+    color: LinkText !important;
+    opacity: 1 !important;
+    mix-blend-mode: normal !important;
+  }
+  .nav-fog,
+  .nav-reveal {
+    display: none;
+  }
+}

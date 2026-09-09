@@ -1,0 +1,170 @@
+---
+import { getCollection } from "astro:content";
+import PortfolioLayout from "../layouts/PortfolioLayout.astro";
+import ProjectCard from "../components/project-card/ProjectCard.astro";
+import "../components/project-card/project-card.css";
+import "../components/gallery/gallery.css";
+const projects = (
+  await getCollection("projects", ({ data }) => !data.draft)
+).sort((a, b) => a.data.order - b.data.order);
+const images = (await getCollection("gallery")).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort(
+  (a, b) => a.localeCompare(b),
+);
+---
+
+<PortfolioLayout composition="landing">
+  <div data-portfolio-shell>
+    <h1 class="sr-only">Marcus — Portfolio</h1>
+    <p class="sr-only">
+      A rotating planet and ring made from real ASCII text. Explore about me,
+      projects, and gallery.
+    </p>
+    <noscript>
+      <style is:global>
+        body[data-composition="landing"] {
+          height: auto;
+          overflow: auto;
+        }
+        .landing-content {
+          position: relative;
+          pointer-events: auto;
+        }
+        .portfolio-panel[hidden] {
+          display: block !important;
+        }
+        .primary-nav,
+        .menu-notch,
+        .scene-controls {
+          display: none !important;
+        }
+      </style>
+    </noscript>
+
+    <section class="portfolio-panel" data-panel="about" hidden>
+      <h1 data-panel-focus tabindex="-1">Hi, I'm Marcus.</h1>
+      <p class="lede">This is my space on the web.</p>
+      <p class="muted">
+        I'm putting it together a piece at a time, starting with a planet made
+        of text.
+      </p>
+      <div class="inline-links">
+        <a href="#projects">Explore projects ↗</a><a href="#gallery"
+          >Open gallery ↗</a
+        >
+      </div>
+    </section>
+
+    <section
+      class="portfolio-panel portfolio-panel--projects"
+      data-panel="projects"
+      data-panel-focus
+      aria-label="Projects"
+      tabindex="-1"
+      hidden
+    >
+      <div class="project-layout" data-project-filters>
+        <ul class="project-list">
+          {projects.map((project) => <ProjectCard project={project} />)}
+        </ul>
+        <aside class="project-filters" aria-label="Project filters">
+          <div class="project-filters__heading">
+            <span>Filter projects</span>
+          </div>
+          <div class="project-filters__list">
+            {
+              projectTags.map((tag) => (
+                <button
+                  class="project-filter"
+                  type="button"
+                  data-project-filter={tag.toLowerCase()}
+                  aria-pressed="false"
+                >
+                  {tag}
+                </button>
+              ))
+            }
+          </div>
+          <div class="project-filters__resets">
+            <button
+              class="project-filter-reset"
+              type="button"
+              data-project-filter-reset
+              hidden
+            >
+              reset filter
+            </button>
+            <button
+              class="project-filter-reset"
+              type="button"
+              data-project-order-reset
+              hidden
+            >
+              reset order
+            </button>
+          </div>
+        </aside>
+        <p class="sr-only" data-project-filter-status aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="portfolio-panel" data-panel="gallery" hidden>
+      <h1 data-panel-focus tabindex="-1">A closer look.</h1>
+      <p class="lede">A space for images and visual experiments.</p>
+      {
+        images.length === 0 ? (
+          <p class="empty-state">Nothing here just yet.</p>
+        ) : (
+          <div data-gallery>
+            <div class="gallery-grid">
+              {images.map(({ data }) => (
+                <a
+                  class="gallery-item"
+                  href={data.src}
+                  data-image
+                  data-title={data.title}
+                  data-caption={data.caption ?? ""}
+                >
+                  <img
+                    src={data.src}
+                    width={data.width}
+                    height={data.height}
+                    alt={data.alt}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span>{data.title}</span>
+                </a>
+              ))}
+            </div>
+            <dialog class="lightbox" aria-label="Image viewer">
+              <button
+                class="lightbox-close"
+                data-close
+                type="button"
+                aria-label="Close image viewer"
+              >
+                Close ×
+              </button>
+              <figure>
+                <img data-full-image alt="" />
+                <figcaption data-caption />
+              </figure>
+              <div class="lightbox-controls">
+                <button data-previous type="button" aria-label="Previous image">
+                  ←
+                </button>
+                <span data-count aria-live="polite" />
+                <button data-next type="button" aria-label="Next image">
+                  →
+                </button>
+              </div>
+            </dialog>
+          </div>
+        )
+      }
+    </section>
+  </div>
+</PortfolioLayout>
