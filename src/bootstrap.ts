@@ -14,6 +14,11 @@ import { attachProjectGrid } from "./components/project-card/project-grid";
 
 function mountPage(): () => void {
   const disposers: (() => void)[] = [];
+  const events = new AbortController();
+  document.addEventListener("scene:error", showSceneError, {
+    signal: events.signal,
+  });
+  disposers.push(() => events.abort());
   const scene = document.querySelector<OrbitScene>("orbit-scene")?.controller;
   const nav = document.querySelector<HTMLElement>(".primary-nav");
   const homeLink = document.querySelector<HTMLAnchorElement>(
@@ -68,14 +73,9 @@ function showSceneError() {
       button.disabled = true;
     });
 }
-const events = new AbortController();
-document.addEventListener("scene:error", showSceneError, {
-  signal: events.signal,
-});
 const cleanup = mountPage();
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     cleanup();
-    events.abort();
   });
 }
