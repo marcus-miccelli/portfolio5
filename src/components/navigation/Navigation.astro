@@ -1,21 +1,17 @@
 ---
-const routes = [
-  { view: "about", label: "about me" },
-  { view: "projects", label: "projects" },
-  { view: "gallery", label: "gallery" },
-];
+import { landingViews } from "../shell/views";
 ---
 
 <nav class="primary-nav" aria-label="Primary">
   {
-    routes.map(({ view, label }) => (
-      <button type="button" data-nav-view={view}>
+    landingViews.map(({ id, menuLabel }) => (
+      <button type="button" data-nav-view={id}>
         <span class="nav-label">
-          <span class="nav-base">{label}</span>
-          <span class="nav-fog" aria-hidden="true">{label}</span>
+          <span class="nav-base">{menuLabel}</span>
+          <span class="nav-fog" aria-hidden="true">{menuLabel}</span>
         </span>
         <span class="nav-reveal" aria-hidden="true">
-          {label}
+          {menuLabel}
         </span>
       </button>
     ))

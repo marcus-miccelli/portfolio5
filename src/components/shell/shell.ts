@@ -1,18 +1,13 @@
-const viewIds = ["about", "projects", "gallery"] as const;
-type ViewId = (typeof viewIds)[number];
+import { isViewId, landingViews, type ViewId } from "./views";
+
 interface PortfolioShellState {
   view: ViewId;
   returnsToMenu: boolean;
 }
-const titles: Record<ViewId, string> = {
-  about: "About Marcus",
-  projects: "Marcus' Projects",
-  gallery: "Marcus' Gallery",
-};
 
 function viewFromHash(): ViewId | null {
   const value = location.hash.slice(1);
-  return viewIds.includes(value as ViewId) ? (value as ViewId) : null;
+  return isViewId(value) ? value : null;
 }
 
 function currentHistoryState(): Record<string, unknown> {
@@ -26,7 +21,8 @@ function shellState(): PortfolioShellState | null {
     | Partial<PortfolioShellState>
     | undefined;
   return state &&
-    viewIds.includes(state.view as ViewId) &&
+    typeof state.view === "string" &&
+    isViewId(state.view) &&
     typeof state.returnsToMenu === "boolean"
     ? (state as PortfolioShellState)
     : null;
@@ -59,7 +55,9 @@ export function attachPortfolioShell(
     }
     view = next;
     document.body.dataset.view = next ?? "menu";
-    document.title = next ? titles[next] : menuTitle;
+    document.title = next
+      ? landingViews.find(({ id }) => id === next)!.documentTitle
+      : menuTitle;
     panels.forEach((panel) => {
       const active = panel.dataset.panel === next;
       panel.hidden = !active;
@@ -134,9 +132,9 @@ export function attachPortfolioShell(
         target instanceof HTMLButtonElement
           ? target.dataset.navView
           : target.hash.slice(1);
-      if (!viewIds.includes(next as ViewId)) return;
+      if (!next || !isViewId(next)) return;
       event.preventDefault();
-      open(next as ViewId, navTarget ?? undefined);
+      open(next, navTarget ?? undefined);
     },
     { capture: true, signal: events.signal },
   );
