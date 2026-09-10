@@ -8,6 +8,9 @@ export function attachProjectFilters(root: HTMLElement): () => void {
   );
   const status = root.querySelector<HTMLElement>("[data-project-filter-status]");
   const selectedTags = new Set<string>();
+  const tagsByTile = new Map(
+    tiles.map((tile) => [tile, (tile.dataset.projectTags ?? "").split("|")]),
+  );
   const events = new AbortController();
 
   const update = (announce = false) => {
@@ -18,10 +21,9 @@ export function attachProjectFilters(root: HTMLElement): () => void {
     });
     if (reset) reset.hidden = selectedTags.size === 0;
     tiles.forEach((tile) => {
-      const tags = new Set((tile.dataset.projectTags ?? "").split("|"));
       tile.hidden =
         selectedTags.size > 0 &&
-        ![...selectedTags].some((tag) => tags.has(tag));
+        !tagsByTile.get(tile)!.some((tag) => selectedTags.has(tag));
     });
     const visible = tiles.filter((tile) => !tile.hidden).length;
     if (announce && status) status.textContent = `${visible} projects shown.`;
