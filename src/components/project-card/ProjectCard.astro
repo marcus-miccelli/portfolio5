@@ -1,22 +1,12 @@
 ---
 import type { CollectionEntry } from "astro:content";
-import type { ProjectLinkKind } from "../../content/project-links";
+import { projectLinkKind } from "../../content/project-links";
 import ProjectLinkIcon from "./ProjectLinkIcon.astro";
 interface Props {
   project: CollectionEntry<"projects">;
 }
 const { project } = Astro.props;
 const { title, summary, tags, badge, media: preview, links } = project.data;
-
-const destinationKind = (link: (typeof links)[number]): ProjectLinkKind => {
-  if (link.kind) return link.kind;
-  const host = new URL(link.href).hostname;
-  if (host === "github.com") return "github";
-  if (host === "devpost.com") return "devpost";
-  if (host.endsWith(".itch.io") || host === "itch.io") return "itch";
-  if (host === "marketplace.visualstudio.com") return "vscode";
-  return "website";
-};
 ---
 
 <li
@@ -41,7 +31,7 @@ const destinationKind = (link: (typeof links)[number]): ProjectLinkKind => {
               aria-label={`${link.label} — opens in a new tab`}
               data-label={link.label}
             >
-              <ProjectLinkIcon kind={destinationKind(link)} />
+              <ProjectLinkIcon kind={projectLinkKind(link.href, link.kind)} />
             </a>
           ))
         }
