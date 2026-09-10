@@ -175,20 +175,24 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
     };
 
     let targetTile: HTMLElement | null = null;
+    let targetDistance = Number.POSITIVE_INFINITY;
     for (const tile of visibleTiles()) {
       if (tile === drag.tile) continue;
       const position = positions.get(tile);
       const size = sizes.get(tile);
       if (!position || !size) continue;
-      if (
+      const dx = draggedCenter.x - (position.x + size.width / 2);
+      const dy = draggedCenter.y - (position.y + size.height / 2);
+      const distance = dx * dx + dy * dy;
+      if (distance >= targetDistance) continue;
+      targetDistance = distance;
+      targetTile =
         draggedCenter.x >= position.x &&
         draggedCenter.x <= position.x + size.width &&
         draggedCenter.y >= position.y &&
         draggedCenter.y <= position.y + size.height
-      ) {
-        targetTile = tile;
-        break;
-      }
+          ? tile
+          : null;
     }
 
     if (!targetTile) {
