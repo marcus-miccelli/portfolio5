@@ -174,46 +174,31 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
       y: draggedPosition.y + (sizes.get(drag.tile)?.height ?? 0) / 2,
     };
 
-    let closest: HTMLElement | null = null;
-    let closestDistance = Number.POSITIVE_INFINITY;
+    let targetTile: HTMLElement | null = null;
     for (const tile of visibleTiles()) {
       if (tile === drag.tile) continue;
       const position = positions.get(tile);
       const size = sizes.get(tile);
       if (!position || !size) continue;
-      const dx = draggedCenter.x - (position.x + size.width / 2);
-      const dy = draggedCenter.y - (position.y + size.height / 2);
-      const distance = dx * dx + dy * dy;
-      if (distance < closestDistance) {
-        closest = tile;
-        closestDistance = distance;
+      if (
+        draggedCenter.x >= position.x &&
+        draggedCenter.x <= position.x + size.width &&
+        draggedCenter.y >= position.y &&
+        draggedCenter.y <= position.y + size.height
+      ) {
+        targetTile = tile;
+        break;
       }
     }
 
-    if (!closest) {
+    if (!targetTile) {
       setDropTarget(null);
       return;
     }
-    const target = positions.get(closest);
-    const targetSize = sizes.get(closest);
-    if (!target || !targetSize) {
-      setDropTarget(null);
-      return;
-    }
-    const insideTarget =
-      draggedCenter.x >= target.x &&
-      draggedCenter.x <= target.x + targetSize.width &&
-      draggedCenter.y >= target.y &&
-      draggedCenter.y <= target.y + targetSize.height;
-    if (!insideTarget) {
-      setDropTarget(null);
-      return;
-    }
-
-    setDropTarget(closest);
+    setDropTarget(targetTile);
 
     const from = tiles.indexOf(drag.tile);
-    const to = tiles.indexOf(closest);
+    const to = tiles.indexOf(targetTile);
     if (from === to) return;
     tiles.splice(from, 1);
     tiles.splice(to, 0, drag.tile);
