@@ -17,6 +17,19 @@ import { ART } from "../config";
 const ATLAS_COLUMNS = 10;
 const ATLAS_ROWS = 7;
 const BASE_GLYPHS = ".:-=+*#%@";
+const GLYPH_VARIANT_RANGES: Readonly<
+  Record<string, readonly [number, number]>
+> = {
+  ".": [0, 26],
+  ":": [27, 41],
+  "-": [42, 45],
+  "=": [46, 47],
+  "+": [48, 49],
+  "*": [50, 53],
+  "#": [54, 55],
+  "%": [56, 57],
+  "@": [58, 59],
+};
 const CELL_WIDTH = ART.cell.width;
 const CELL_HEIGHT = ART.cell.height;
 const APPEARANCE_STRIDE = 6;
@@ -218,18 +231,7 @@ const createProgram = (gl: WebGL2RenderingContext): WebGLProgram => {
 const glyphIndex = (cell: Cell): number => {
   const base = BASE_GLYPHS.indexOf(cell.char);
   if (base < 0) return 0;
-  const ranges: Record<string, readonly [number, number]> = {
-    ".": [0, 26],
-    ":": [27, 41],
-    "-": [42, 45],
-    "=": [46, 47],
-    "+": [48, 49],
-    "*": [50, 53],
-    "#": [54, 55],
-    "%": [56, 57],
-    "@": [58, 59],
-  };
-  const range = ranges[cell.char];
+  const range = GLYPH_VARIANT_RANGES[cell.char];
   return range && cell.variant >= range[0] && cell.variant <= range[1]
     ? BASE_GLYPHS.length + cell.variant
     : base;
