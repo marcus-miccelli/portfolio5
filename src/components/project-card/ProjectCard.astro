@@ -15,6 +15,11 @@ const { title, summary, tags, badge, media: preview, links } = project.data;
   data-project-tags={tags.map((tag) => tag.toLowerCase()).join("|")}
 >
   <article class="project-card">
+    <span
+      class="project-card__drag-handle"
+      data-project-drag-handle
+      aria-hidden="true"
+    ></span>
     <div class="project-card__heading">
       <h2>{title}</h2>
       <div
@@ -36,11 +41,6 @@ const { title, summary, tags, badge, media: preview, links } = project.data;
           ))
         }
       </div>
-      <span
-        class="project-card__drag-handle"
-        data-project-drag-handle
-        aria-hidden="true"
-      ></span>
     </div>
     <div class="project-card__media">
       <div
