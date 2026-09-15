@@ -108,6 +108,14 @@ p {
   inset: 0;
   pointer-events: none;
 }
+.panel-cursor-trail {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  filter: hue-rotate(var(--scene-hue, 0deg));
+  mix-blend-mode: screen;
+}
 [data-view]:not([data-view="menu"]) .landing-content {
   position: relative;
   inset: auto;
