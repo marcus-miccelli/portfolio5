@@ -183,7 +183,7 @@
 
 .project-tile:hover .project-card__link-shine,
 .project-card:focus-within .project-card__link-shine {
-  animation: project-link-wave 1600ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  animation: project-link-wave 4800ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 @keyframes project-link-wave {
