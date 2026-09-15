@@ -3,6 +3,7 @@ interface TrailSample {
   y: number;
   width: number;
   opacity: number;
+  phase: number;
 }
 
 interface Wisp {
@@ -18,9 +19,9 @@ interface Wisp {
 
 const RENDER_SCALE = 0.55;
 const MAX_TRAIL_SAMPLES = 34;
-const MAX_WISPS = 42;
-const FADE_DELAY = 420;
-const FADE_DURATION = 1050;
+const MAX_WISPS = 48;
+const FADE_DELAY = 620;
+const FADE_DURATION = 1500;
 
 export function attachPanelCursorTrail(): () => void {
   const canvas = document.createElement("canvas");
@@ -77,11 +78,11 @@ export function attachPanelCursorTrail(): () => void {
       wisps.push({
         x: ghost.x,
         y: ghost.y,
-        velocityX: ghost.velocityX * 0.14 + side * (0.25 + spread),
-        velocityY: ghost.velocityY * 0.14 - side * (0.25 + spread),
+        velocityX: ghost.velocityX * 0.2 + side * (0.4 + spread),
+        velocityY: ghost.velocityY * 0.2 - side * (0.4 + spread),
         radius: 2.5 + Math.random() * 4 + spread * 2,
         age: 0,
-        lifetime: 620 + Math.random() * 520,
+        lifetime: 820 + Math.random() * 680,
         curl: side * (0.012 + Math.random() * 0.012),
       });
     }
@@ -90,7 +91,7 @@ export function attachPanelCursorTrail(): () => void {
   };
 
   const update = (now: number, delta: number) => {
-    const pull = 1 - Math.pow(0.48, delta / 16.67);
+    const pull = 1 - Math.pow(0.68, delta / 16.67);
     const previousX = ghost.x;
     const previousY = ghost.y;
     ghost.x += (pointer.x - ghost.x) * pull;
@@ -105,13 +106,14 @@ export function attachPanelCursorTrail(): () => void {
         y: ghost.y,
         width: Math.min(15, 5 + speed * 0.36),
         opacity: 1,
+        phase: Math.random() * Math.PI * 2,
       });
       if (trail.length > MAX_TRAIL_SAMPLES) trail.shift();
       if (speed > 1.25) addWisps(speed);
     }
 
     trail.forEach((sample) => {
-      sample.opacity *= Math.pow(0.958, delta / 16.67);
+      sample.opacity *= Math.pow(0.985, delta / 16.67);
     });
     while (trail.length && trail[0].opacity < 0.025) trail.shift();
 
@@ -171,6 +173,58 @@ export function attachPanelCursorTrail(): () => void {
     }
   };
 
+  const drawMist = (now: number, masterOpacity: number) => {
+    context.globalCompositeOperation = "lighter";
+    for (let index = 0; index < trail.length; index += 2) {
+      const sample = trail[index];
+      const tail = index / Math.max(1, trail.length - 1);
+      const drift = Math.sin(now * 0.0018 + sample.phase) * 4;
+      const radius = sample.width * (2.5 + tail * 1.5);
+      const gradient = context.createRadialGradient(
+        sample.x + drift,
+        sample.y - drift * 0.45,
+        0,
+        sample.x + drift,
+        sample.y - drift * 0.45,
+        radius,
+      );
+      const opacity = sample.opacity * masterOpacity * (0.018 + tail * 0.018);
+      gradient.addColorStop(0, `rgb(130 175 227 / ${opacity})`);
+      gradient.addColorStop(0.42, `rgb(130 175 227 / ${opacity * 0.42})`);
+      gradient.addColorStop(1, "rgb(130 175 227 / 0)");
+      context.fillStyle = gradient;
+      context.fillRect(
+        sample.x + drift - radius,
+        sample.y - drift * 0.45 - radius,
+        radius * 2,
+        radius * 2,
+      );
+    }
+  };
+
+  const drawGhostHead = (masterOpacity: number) => {
+    const radius = 24;
+    const gradient = context.createRadialGradient(
+      ghost.x,
+      ghost.y,
+      0,
+      ghost.x,
+      ghost.y,
+      radius,
+    );
+    gradient.addColorStop(
+      0,
+      `rgb(174 204 238 / ${0.085 * masterOpacity})`,
+    );
+    gradient.addColorStop(
+      0.22,
+      `rgb(130 175 227 / ${0.055 * masterOpacity})`,
+    );
+    gradient.addColorStop(1, "rgb(130 175 227 / 0)");
+    context.fillStyle = gradient;
+    context.fillRect(ghost.x - radius, ghost.y - radius, radius * 2, radius * 2);
+  };
+
   const drawWisps = (masterOpacity: number) => {
     context.globalCompositeOperation = "lighter";
     wisps.forEach((wisp) => {
@@ -199,15 +253,19 @@ export function attachPanelCursorTrail(): () => void {
     const delta = Math.min(32, lastFrameAt ? now - lastFrameAt : 16.67);
     lastFrameAt = now;
     const idleFor = now - lastMoveAt;
-    const masterOpacity =
-      idleFor <= FADE_DELAY
-        ? 1
-        : Math.max(0, 1 - (idleFor - FADE_DELAY) / FADE_DURATION);
+    const fadeProgress = Math.min(
+      1,
+      Math.max(0, (idleFor - FADE_DELAY) / FADE_DURATION),
+    );
+    const easedFade = fadeProgress * fadeProgress * (3 - 2 * fadeProgress);
+    const masterOpacity = Math.pow(1 - easedFade, 1.35);
 
     update(now, delta);
     context.clearRect(0, 0, innerWidth, innerHeight);
+    drawMist(now, masterOpacity);
     drawRibbon(masterOpacity);
     drawWisps(masterOpacity);
+    drawGhostHead(masterOpacity);
 
     if (masterOpacity > 0 && (trail.length || wisps.length))
       frame = requestAnimationFrame(draw);
