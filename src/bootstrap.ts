@@ -1,5 +1,6 @@
 import "./scene/element";
 import type { OrbitScene } from "./scene/element";
+import { attachAboutSlideshow } from "./components/about/about-slideshow";
 import { attachFogText } from "./scene/effects/fog-text";
 import {
   attachEscapeHome,
@@ -34,6 +35,9 @@ function mountPage(): () => void {
     "[data-project-filters]",
   );
   const projectGrid = document.querySelector<HTMLElement>(".project-list");
+  const aboutSlideshow = document.querySelector<HTMLElement>(
+    "[data-about-slideshow]",
+  );
   try {
     scene?.refresh();
     if (nav) {
@@ -48,6 +52,8 @@ function mountPage(): () => void {
     if (socialIsland) disposers.push(attachSocialIsland(socialIsland));
     if (projectFilters) disposers.push(attachProjectFilters(projectFilters));
     if (projectGrid) disposers.push(attachProjectGrid(projectGrid));
+    if (aboutSlideshow)
+      disposers.push(attachAboutSlideshow(aboutSlideshow));
     if (scene && controls) disposers.push(attachControls(controls, scene));
     const gallery = document.querySelector<HTMLElement>("[data-gallery]");
     if (gallery) disposers.push(attachGallery(gallery));

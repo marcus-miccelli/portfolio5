@@ -1,0 +1,42 @@
+---
+export interface AboutSlide {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+interface Props {
+  slides: AboutSlide[];
+}
+
+const { slides } = Astro.props;
+const firstSlide = slides[0];
+---
+
+{
+  firstSlide && (
+    <figure
+      class="about-slideshow"
+      data-about-slideshow
+      aria-label="About me photo slideshow"
+    >
+      <div class="about-slideshow__stage">
+        {slides.map((slide, index) => (
+          <img
+            class:list={["about-slideshow__image", index === 0 && "is-active"]}
+            data-about-slide
+            src={slide.src}
+            width={slide.width}
+            height={slide.height}
+            alt={slide.alt}
+            aria-hidden={index === 0 ? "false" : "true"}
+            loading="lazy"
+            decoding="async"
+          />
+        ))}
+      </div>
+      <figcaption data-about-slide-caption>{firstSlide.alt}</figcaption>
+    </figure>
+  )
+}

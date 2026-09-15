@@ -1,7 +1,12 @@
 ---
 import { getCollection } from "astro:content";
 import PortfolioLayout from "../layouts/PortfolioLayout.astro";
+import AboutSlideshow, {
+  type AboutSlide,
+} from "../components/about/AboutSlideshow.astro";
 import ProjectCard from "../components/project-card/ProjectCard.astro";
+import aboutCopy from "../content/about.txt?raw";
+import "../components/about/about.css";
 import "../components/project-card/project-card.css";
 import "../components/gallery/gallery.css";
 const projects = (
@@ -13,6 +18,58 @@ const images = (await getCollection("gallery")).sort(
 const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort(
   (a, b) => a.localeCompare(b),
 );
+const normalizedAboutCopy = aboutCopy.trim().replaceAll("\r\n", "\n");
+const [aboutIntroduction = "", ...aboutParagraphs] =
+  normalizedAboutCopy.split("\n\n");
+const aboutEmphasis = new Set([
+  "facilitate changing my life",
+  "math-minded from a young age",
+  "This breadth was intentional",
+  "a proper education",
+  "over 1000 beats",
+  "the theory and the PowerShell scripting",
+  "I wanted to do something hard",
+  "a test of who I really was",
+  "technical pursuit and creative expression",
+]);
+const emphasisPattern = new RegExp(
+  `(${[...aboutEmphasis]
+    .sort((a, b) => b.length - a.length)
+    .map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|")})`,
+  "g",
+);
+const styledAboutCopy = (copy: string) =>
+  copy.split(emphasisPattern).map((text) => ({
+    text,
+    emphasized: aboutEmphasis.has(text),
+  }));
+const aboutSlides: AboutSlide[] = [
+  {
+    src: "/about/slides/naruto-01.jpg",
+    alt: "Naruto screenshot: Itachi Uchiha wearing a cracked Leaf Village forehead protector.",
+    width: 1056,
+    height: 800,
+  },
+  {
+    src: "/about/slides/naruto-02.jpg",
+    alt: "Naruto screenshot: Shikamaru and Naruto standing on the arena steps.",
+    width: 1065,
+    height: 800,
+  },
+  {
+    src: "/about/slides/naruto-03.jpg",
+    alt: "Naruto screenshot: a silhouetted profile against a red sky.",
+    width: 1060,
+    height: 800,
+  },
+  {
+    src: "/about/slides/naruto-04.jpg",
+    alt: "Naruto screenshot: a bandaged ninja facing a silhouetted opponent.",
+    width: 1060,
+    height: 800,
+  },
+];
 ---
 
 <PortfolioLayout composition="landing">
@@ -43,18 +100,37 @@ const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort
       </style>
     </noscript>
 
-    <section class="portfolio-panel" data-panel="about" data-preload hidden>
-      <h1 data-panel-focus tabindex="-1">Hi, I'm Marcus.</h1>
-      <p class="lede">This is my space on the web.</p>
-      <p class="muted">
-        I'm putting it together a piece at a time, starting with a planet made
-        of text.
-      </p>
-      <div class="inline-links">
-        <a href="#projects">Explore projects ↗</a><a href="#gallery"
-          >Open gallery ↗</a
+    <section
+      class="portfolio-panel portfolio-panel--about"
+      data-panel="about"
+      data-preload
+      hidden
+    >
+      <article class="about-story">
+        <p
+          class="about-story__intro"
+          data-panel-focus
+          tabindex="-1"
         >
-      </div>
+          {
+            styledAboutCopy(aboutIntroduction).map(({ text, emphasized }) =>
+              emphasized ? <strong>{text}</strong> : text,
+            )
+          }
+        </p>
+        <div class="about-story__copy">
+          {
+            aboutParagraphs.map((paragraph) => (
+              <p>
+                {styledAboutCopy(paragraph).map(({ text, emphasized }) =>
+                  emphasized ? <strong>{text}</strong> : text,
+                )}
+              </p>
+            ))
+          }
+        </div>
+        <AboutSlideshow slides={aboutSlides} />
+      </article>
     </section>
 
     <section
