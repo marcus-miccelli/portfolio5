@@ -2,6 +2,7 @@ export function attachNavigation(nav: HTMLElement): () => void {
   const buttons = [
     ...nav.querySelectorAll<HTMLButtonElement>("[data-nav-view]"),
   ];
+  const sceneControls = document.querySelector<HTMLElement>(".scene-controls");
   const events = new AbortController();
   const options = { signal: events.signal };
   let selected = -1;
@@ -119,7 +120,9 @@ export function attachNavigation(nav: HTMLElement): () => void {
       if (onLanding && document.body.dataset.view !== "menu") return;
       if (
         !(target instanceof Node) ||
-        (!nav.contains(target) && !(onLanding && target === document.body))
+        (!nav.contains(target) &&
+          !sceneControls?.contains(target) &&
+          !(onLanding && target === document.body))
       )
         return;
       if (event.key === "Tab") {
