@@ -101,7 +101,7 @@ const fragmentShader = `
     float smoke = fbm(
       domain * iScale + positionPhase * 0.3 + r * 0.8
     );
-    float textureDensity = mix(0.26, 0.38, pow(smoke, 1.8));
+    float textureDensity = smoothstep(0.12, 0.58, pow(smoke, 1.7));
     float radius = 0.27 + 0.13 * (1.0 / iScale);
     float distanceFactor = 1.0 - smoothstep(
       0.0,
@@ -121,12 +121,10 @@ const fragmentShader = `
     vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);
     vec2 uv = (gl_FragCoord.xy / iResolution.xy * 2.0 - 1.0) * aspect;
     vec2 mouse = (iMouse * 2.0 - 1.0) * aspect;
-    vec3 color = vec3(0.0);
-    float alpha = 0.0;
+    float density = 0.0;
 
     vec4 head = blob(uv, mouse, 0.72, iOpacity);
-    color += head.rgb;
-    alpha += head.a;
+    density = max(density, head.a);
 
     for (int i = 0; i < MAX_TRAIL_LENGTH; i++) {
       if (i >= iTrailCount) break;
@@ -135,12 +133,16 @@ const fragmentShader = `
       strength = pow(strength, 2.4);
       if (strength > 0.01) {
         vec4 trail = blob(uv, previous, strength * 0.34, iOpacity);
-        color += trail.rgb;
-        alpha += trail.a;
+        density = max(density, trail.a);
       }
     }
 
-    color *= iBrightness;
+    vec3 smokeColor = mix(
+      tint1(iBaseColor),
+      tint2(iBaseColor),
+      sin(iTime * 0.5) * 0.5 + 0.5
+    );
+    vec3 color = smokeColor * density * iBrightness;
     vec2 uv01 = gl_FragCoord.xy / iResolution.xy;
     float edgeDistance = min(
       min(uv01.x, 1.0 - uv01.x),
@@ -151,7 +153,7 @@ const fragmentShader = `
       1.0,
       clamp(edgeDistance * 2.0, 0.0, 1.0)
     );
-    float outputAlpha = clamp(alpha * iOpacity * edgeMask, 0.0, 1.0);
+    float outputAlpha = clamp(density * iOpacity * edgeMask, 0.0, 1.0);
     gl_FragColor = vec4(color, outputAlpha);
   }
 `;
