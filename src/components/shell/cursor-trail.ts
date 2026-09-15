@@ -10,7 +10,7 @@ const GRAIN_INTENSITY = 0.05;
 const BLOOM_STRENGTH = 0.055;
 const BLOOM_RADIUS = 1;
 const BLOOM_THRESHOLD = 0.025;
-const BRIGHTNESS = 0.9;
+const BRIGHTNESS = 1.15;
 const MAX_DEVICE_PIXEL_RATIO = 0.5;
 const TARGET_PIXELS = 1_300_000;
 const FADE_DELAY = 1000;
@@ -101,7 +101,7 @@ const fragmentShader = `
       domain * iScale + positionPhase * 0.3 + r * 0.8
     );
     float textureDensity = mix(0.16, 0.62, pow(smoke, 1.8));
-    float radius = 0.34 + 0.18 * (1.0 / iScale);
+    float radius = 0.27 + 0.13 * (1.0 / iScale);
     float distanceFactor = 1.0 - smoothstep(
       0.0,
       radius * activity,
