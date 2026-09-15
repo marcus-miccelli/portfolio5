@@ -1,268 +1,359 @@
-const MAX_TRAIL_POINTS = 38;
-const RENDER_SCALE = 0.46;
-const FADE_DELAY = 720;
-const FADE_DURATION = 1700;
+import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
-const vertexShaderSource = `#version 300 es
-precision highp float;
+const TRAIL_LENGTH = 50;
+const INERTIA = 0.5;
+const GRAIN_INTENSITY = 0.05;
+const BLOOM_STRENGTH = 0.1;
+const BLOOM_RADIUS = 1;
+const BLOOM_THRESHOLD = 0.025;
+const BRIGHTNESS = 2;
+const MAX_DEVICE_PIXEL_RATIO = 0.5;
+const TARGET_PIXELS = 1_300_000;
+const FADE_DELAY = 1000;
+const FADE_DURATION = 1500;
 
-const vec2 positions[3] = vec2[3](
-  vec2(-1.0, -1.0),
-  vec2(3.0, -1.0),
-  vec2(-1.0, 3.0)
-);
-
-void main() {
-  gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
-}`;
-
-const fragmentShaderSource = `#version 300 es
-precision highp float;
-
-#define MAX_TRAIL_POINTS ${MAX_TRAIL_POINTS}
-
-uniform vec2 uResolution;
-uniform vec2 uTrail[MAX_TRAIL_POINTS];
-uniform int uTrailCount;
-uniform float uTime;
-uniform float uOpacity;
-out vec4 outputColor;
-
-float hash(vec2 point) {
-  return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453123);
-}
-
-float noise(vec2 point) {
-  vec2 cell = floor(point);
-  vec2 local = fract(point);
-  local = local * local * (3.0 - 2.0 * local);
-  return mix(
-    mix(hash(cell), hash(cell + vec2(1.0, 0.0)), local.x),
-    mix(hash(cell + vec2(0.0, 1.0)), hash(cell + 1.0), local.x),
-    local.y
-  );
-}
-
-float fbm(vec2 point) {
-  float value = 0.0;
-  float amplitude = 0.5;
-  mat2 turn = mat2(0.8776, 0.4794, -0.4794, 0.8776);
-  for (int octave = 0; octave < 4; octave++) {
-    value += amplitude * noise(point);
-    point = turn * point * 2.03;
-    amplitude *= 0.5;
+const vertexShader = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = vec4(position, 1.0);
   }
-  return value;
-}
+`;
 
-void main() {
-  vec2 uv = gl_FragCoord.xy / uResolution;
-  float aspect = uResolution.x / uResolution.y;
-  vec2 field = vec2(uv.x * aspect, uv.y);
+const fragmentShader = `
+  uniform float iTime;
+  uniform vec3 iResolution;
+  uniform vec2 iMouse;
+  uniform vec2 iPrevMouse[MAX_TRAIL_LENGTH];
+  uniform float iOpacity;
+  uniform float iScale;
+  uniform vec3 iBaseColor;
+  uniform float iBrightness;
+  uniform float iEdgeIntensity;
+  varying vec2 vUv;
 
-  vec2 turbulence = vec2(
-    fbm(field * 5.2 + vec2(uTime * 0.055, 1.7)),
-    fbm(field * 5.2 + vec2(-2.4, uTime * 0.045))
-  ) - 0.5;
-  vec2 fineTurbulence = vec2(
-    noise(field * 13.0 - uTime * 0.08),
-    noise(field.yx * 15.0 + uTime * 0.065)
-  ) - 0.5;
-
-  float dye = 0.0;
-  float bloom = 0.0;
-  float wake = 0.0;
-  for (int index = 0; index < MAX_TRAIL_POINTS; index++) {
-    if (index >= uTrailCount) break;
-    float age = float(index) / float(MAX_TRAIL_POINTS - 1);
-    float strength = pow(1.0 - age, 1.45);
-    vec2 point = vec2(uTrail[index].x * aspect, uTrail[index].y);
-    vec2 offset = field - point;
-
-    vec2 previous = point;
-    if (index + 1 < uTrailCount)
-      previous = vec2(uTrail[index + 1].x * aspect, uTrail[index + 1].y);
-    vec2 motion = point - previous;
-    vec2 normal = normalize(vec2(-motion.y, motion.x) + vec2(0.0001));
-    float motionForce = min(length(motion) * 42.0, 1.0);
-
-    vec2 warped = offset;
-    warped += turbulence * (0.025 + age * 0.018);
-    warped += fineTurbulence * 0.008;
-    warped += normal * sin(age * 18.0 + uTime * 1.35) * motionForce * 0.012;
-
-    float distanceSquared = dot(warped, warped);
-    float core = exp(-distanceSquared * mix(1250.0, 620.0, age));
-    float mist = exp(-distanceSquared * mix(260.0, 125.0, age));
-    dye += core * strength * 0.28 + mist * strength * 0.048;
-    bloom += exp(-distanceSquared * 58.0) * strength * 0.012;
-
-    float curlBand = abs(length(warped) - (0.022 + motionForce * 0.018));
-    wake += exp(-curlBand * 155.0) * motionForce * strength * 0.013;
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
   }
 
-  float textureNoise = noise(gl_FragCoord.xy * 0.42 + uTime * 17.0) - 0.5;
-  float alpha = clamp((dye + bloom + wake) * uOpacity, 0.0, 0.32);
-  vec3 base = vec3(0.51, 0.69, 0.89);
-  vec3 highlight = vec3(0.68, 0.80, 0.94);
-  vec3 color = mix(base, highlight, clamp(dye * 1.8, 0.0, 1.0));
-  color *= 0.88 + textureNoise * 0.045;
-  outputColor = vec4(color * alpha, alpha);
-}`;
+  float noise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f *= f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+      mix(hash(i + vec2(0.0, 1.0)), hash(i + 1.0), f.x),
+      f.y
+    );
+  }
 
-function createShader(
-  gl: WebGL2RenderingContext,
-  type: number,
-  source: string,
-): WebGLShader | null {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return shader;
-  gl.deleteShader(shader);
-  return null;
-}
+  float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    mat2 rotation = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for (int i = 0; i < 5; i++) {
+      value += amplitude * noise(p);
+      p = rotation * p * 2.0;
+      amplitude *= 0.5;
+    }
+    return value;
+  }
+
+  vec3 tint1(vec3 base) { return mix(base, vec3(1.0), 0.15); }
+  vec3 tint2(vec3 base) { return mix(base, vec3(0.8, 0.9, 1.0), 0.25); }
+
+  vec4 blob(vec2 p, vec2 mousePosition, float intensity, float activity) {
+    vec2 q = vec2(
+      fbm(p * iScale + iTime * 0.1),
+      fbm(p * iScale + vec2(5.2, 1.3) + iTime * 0.1)
+    );
+    vec2 r = vec2(
+      fbm(p * iScale + q * 1.5 + iTime * 0.15),
+      fbm(p * iScale + q * 1.5 + vec2(8.3, 2.8) + iTime * 0.15)
+    );
+    float smoke = fbm(p * iScale + r * 0.8);
+    float radius = 0.5 + 0.3 * (1.0 / iScale);
+    float distanceFactor = 1.0 - smoothstep(
+      0.0,
+      radius * activity,
+      length(p - mousePosition)
+    );
+    float alpha = pow(smoke, 2.5) * distanceFactor;
+    vec3 color = mix(
+      tint1(iBaseColor),
+      tint2(iBaseColor),
+      sin(iTime * 0.5) * 0.5 + 0.5
+    );
+    return vec4(color * alpha * intensity, alpha * intensity);
+  }
+
+  void main() {
+    vec2 aspect = vec2(iResolution.x / iResolution.y, 1.0);
+    vec2 uv = (gl_FragCoord.xy / iResolution.xy * 2.0 - 1.0) * aspect;
+    vec2 mouse = (iMouse * 2.0 - 1.0) * aspect;
+    vec3 color = vec3(0.0);
+    float alpha = 0.0;
+
+    vec4 head = blob(uv, mouse, 1.0, iOpacity);
+    color += head.rgb;
+    alpha += head.a;
+
+    for (int i = 0; i < MAX_TRAIL_LENGTH; i++) {
+      vec2 previous = (iPrevMouse[i] * 2.0 - 1.0) * aspect;
+      float strength = 1.0 - float(i) / float(MAX_TRAIL_LENGTH);
+      strength = pow(strength, 2.0);
+      if (strength > 0.01) {
+        vec4 trail = blob(uv, previous, strength * 0.8, iOpacity);
+        color += trail.rgb;
+        alpha += trail.a;
+      }
+    }
+
+    color *= iBrightness;
+    vec2 uv01 = gl_FragCoord.xy / iResolution.xy;
+    float edgeDistance = min(
+      min(uv01.x, 1.0 - uv01.x),
+      min(uv01.y, 1.0 - uv01.y)
+    );
+    float edgeMask = mix(
+      1.0 - clamp(iEdgeIntensity, 0.0, 1.0),
+      1.0,
+      clamp(edgeDistance * 2.0, 0.0, 1.0)
+    );
+    float outputAlpha = clamp(alpha * iOpacity * edgeMask, 0.0, 1.0);
+    gl_FragColor = vec4(color, outputAlpha);
+  }
+`;
+
+const filmGrainShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    iTime: { value: 0 },
+    intensity: { value: GRAIN_INTENSITY },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float iTime;
+    uniform float intensity;
+    varying vec2 vUv;
+    float hash1(float n) { return fract(sin(n) * 43758.5453); }
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv);
+      float grain = hash1(vUv.x * 1000.0 + vUv.y * 2000.0 + iTime);
+      color.rgb += (grain * 2.0 - 1.0) * intensity * color.rgb;
+      gl_FragColor = color;
+    }
+  `,
+};
+
+const unpremultiplyShader = {
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: filmGrainShader.vertexShader,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    varying vec2 vUv;
+    void main() {
+      vec4 color = texture2D(tDiffuse, vUv);
+      float coverage = clamp(max(color.r, max(color.g, color.b)), 0.0, 1.0);
+      vec3 straight = coverage > 0.00001 ? color.rgb / coverage : vec3(0.0);
+      gl_FragColor = vec4(clamp(straight, 0.0, 1.0), coverage);
+    }
+  `,
+};
 
 export function attachPanelCursorTrail(): () => void {
   const canvas = document.createElement("canvas");
   canvas.className = "panel-cursor-trail";
   canvas.setAttribute("aria-hidden", "true");
-  const gl = canvas.getContext("webgl2", {
-    alpha: true,
-    antialias: false,
-    depth: false,
-    premultipliedAlpha: true,
-    powerPreference: "low-power",
-  });
-  if (!gl) return () => {};
+  let renderer: THREE.WebGLRenderer;
+  try {
+    renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      depth: false,
+      stencil: false,
+      powerPreference: "high-performance",
+      premultipliedAlpha: false,
+    });
+  } catch {
+    return () => {};
+  }
+  renderer.setClearColor(0x000000, 0);
 
-  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-  const fragmentShader = createShader(
-    gl,
-    gl.FRAGMENT_SHADER,
-    fragmentShaderSource,
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const geometry = new THREE.PlaneGeometry(2, 2);
+  const trail = Array.from(
+    { length: TRAIL_LENGTH },
+    () => new THREE.Vector2(0.5, 0.5),
   );
-  const program = gl.createProgram();
-  if (!vertexShader || !fragmentShader || !program) {
-    if (vertexShader) gl.deleteShader(vertexShader);
-    if (fragmentShader) gl.deleteShader(fragmentShader);
-    return () => {};
-  }
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  gl.deleteShader(vertexShader);
-  gl.deleteShader(fragmentShader);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    gl.deleteProgram(program);
-    return () => {};
-  }
+  const material = new THREE.ShaderMaterial({
+    defines: { MAX_TRAIL_LENGTH: TRAIL_LENGTH },
+    uniforms: {
+      iTime: { value: 0 },
+      iResolution: { value: new THREE.Vector3(1, 1, 1) },
+      iMouse: { value: new THREE.Vector2(0.5, 0.5) },
+      iPrevMouse: { value: trail.map((point) => point.clone()) },
+      iOpacity: { value: 0 },
+      iScale: { value: 1 },
+      iBaseColor: { value: new THREE.Vector3(0.51, 0.69, 0.89) },
+      iBrightness: { value: BRIGHTNESS },
+      iEdgeIntensity: { value: 0 },
+    },
+    vertexShader,
+    fragmentShader,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+  });
+  scene.add(new THREE.Mesh(geometry, material));
 
-  const resolutionLocation = gl.getUniformLocation(program, "uResolution");
-  const trailLocation = gl.getUniformLocation(program, "uTrail[0]");
-  const trailCountLocation = gl.getUniformLocation(program, "uTrailCount");
-  const timeLocation = gl.getUniformLocation(program, "uTime");
-  const opacityLocation = gl.getUniformLocation(program, "uOpacity");
-  const vertexArray = gl.createVertexArray();
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(1, 1),
+    BLOOM_STRENGTH,
+    BLOOM_RADIUS,
+    BLOOM_THRESHOLD,
+  );
+  composer.addPass(bloom);
+  const film = new ShaderPass(filmGrainShader);
+  composer.addPass(film);
+  composer.addPass(new ShaderPass(unpremultiplyShader));
+
   const events = new AbortController();
   const options = { signal: events.signal };
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const compactViewport = matchMedia("(max-width: 600px)");
-  const trail = new Float32Array(MAX_TRAIL_POINTS * 2);
-  const target = { x: 0.5, y: 0.5 };
-  const ghost = { x: 0.5, y: 0.5 };
-  let trailCount = 0;
+  const currentMouse = new THREE.Vector2(0.5, 0.5);
+  const velocity = new THREE.Vector2();
+  let head = 0;
+  let frame = 0;
+  let running = false;
   let hasPointer = false;
   let lastMoveAt = 0;
-  let lastFrameAt = 0;
-  let startedAt = 0;
-  let frame = 0;
+  const startedAt = performance.now();
 
   const isEnabled = () => {
     const view = document.body.dataset.view;
     return (
+      !document.hidden &&
       !reducedMotion.matches &&
       !compactViewport.matches &&
       (view === "about" || view === "projects")
     );
   };
 
+  const resetTrail = (point: THREE.Vector2) => {
+    trail.forEach((entry) => entry.copy(point));
+    const shaderTrail = material.uniforms.iPrevMouse.value as THREE.Vector2[];
+    shaderTrail.forEach((entry) => entry.copy(point));
+    material.uniforms.iMouse.value.copy(point);
+    velocity.set(0, 0);
+    head = 0;
+  };
+
   const resize = () => {
-    canvas.width = Math.max(1, Math.round(innerWidth * RENDER_SCALE));
-    canvas.height = Math.max(1, Math.round(innerHeight * RENDER_SCALE));
-    canvas.style.width = `${innerWidth}px`;
-    canvas.style.height = `${innerHeight}px`;
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    const width = Math.max(1, innerWidth);
+    const height = Math.max(1, innerHeight);
+    const deviceRatio = Math.min(devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
+    const requestedPixels = width * height * deviceRatio * deviceRatio;
+    const budgetScale =
+      requestedPixels <= TARGET_PIXELS
+        ? 1
+        : Math.max(0.5, Math.sqrt(TARGET_PIXELS / requestedPixels));
+    const pixelRatio = deviceRatio * budgetScale;
+    renderer.setPixelRatio(pixelRatio);
+    renderer.setSize(width, height, false);
+    composer.setPixelRatio(pixelRatio);
+    composer.setSize(width, height);
+    const pixelWidth = Math.max(1, Math.floor(width * pixelRatio));
+    const pixelHeight = Math.max(1, Math.floor(height * pixelRatio));
+    material.uniforms.iResolution.value.set(pixelWidth, pixelHeight, 1);
+    material.uniforms.iScale.value = Math.max(
+      0.5,
+      Math.min(2, Math.min(width, height) / 600),
+    );
+    bloom.setSize(pixelWidth, pixelHeight);
   };
 
   const clear = () => {
     cancelAnimationFrame(frame);
     frame = 0;
-    trailCount = 0;
-    hasPointer = false;
-    lastFrameAt = 0;
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    running = false;
+    material.uniforms.iOpacity.value = 0;
+    renderer.setRenderTarget(null);
+    renderer.clear();
   };
 
-  const pushTrailPoint = (x: number, y: number) => {
-    const usedLength = Math.min(trailCount, MAX_TRAIL_POINTS - 1) * 2;
-    trail.copyWithin(2, 0, usedLength);
-    trail[0] = x;
-    trail[1] = y;
-    trailCount = Math.min(MAX_TRAIL_POINTS, trailCount + 1);
-  };
+  const animate = (now: number) => {
+    if (!running || !isEnabled()) {
+      clear();
+      return;
+    }
 
-  const draw = (now: number) => {
-    frame = 0;
-    const delta = Math.min(34, lastFrameAt ? now - lastFrameAt : 16.67);
-    lastFrameAt = now;
-    const pull = 1 - Math.pow(0.72, delta / 16.67);
-    const previousX = ghost.x;
-    const previousY = ghost.y;
-    ghost.x += (target.x - ghost.x) * pull;
-    ghost.y += (target.y - ghost.y) * pull;
-    const distance = Math.hypot(ghost.x - previousX, ghost.y - previousY);
-    if (now - lastMoveAt < 130 || distance > 0.00018)
-      pushTrailPoint(ghost.x, ghost.y);
+    const idleFor = now - lastMoveAt;
+    const pointerMoving = idleFor < 80;
+    const mouse = material.uniforms.iMouse.value as THREE.Vector2;
+    if (pointerMoving) {
+      velocity.set(currentMouse.x - mouse.x, currentMouse.y - mouse.y);
+      mouse.copy(currentMouse);
+    } else {
+      velocity.multiplyScalar(INERTIA);
+      if (velocity.lengthSq() > 0.000001) mouse.add(velocity);
+    }
+
+    head = (head + 1) % TRAIL_LENGTH;
+    trail[head].copy(mouse);
+    const shaderTrail = material.uniforms.iPrevMouse.value as THREE.Vector2[];
+    for (let index = 0; index < TRAIL_LENGTH; index += 1) {
+      const source = (head - index + TRAIL_LENGTH) % TRAIL_LENGTH;
+      shaderTrail[index].copy(trail[source]);
+    }
 
     const fadeProgress = Math.min(
       1,
-      Math.max(0, (now - lastMoveAt - FADE_DELAY) / FADE_DURATION),
+      Math.max(0, (idleFor - FADE_DELAY) / FADE_DURATION),
     );
     const easedFade = fadeProgress * fadeProgress * (3 - 2 * fadeProgress);
-    const opacity = Math.pow(1 - easedFade, 1.4);
+    material.uniforms.iOpacity.value = Math.pow(1 - easedFade, 1.25);
+    material.uniforms.iTime.value = (now - startedAt) / 1000;
+    film.uniforms.iTime.value = material.uniforms.iTime.value;
+    composer.render();
 
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.useProgram(program);
-    gl.bindVertexArray(vertexArray);
-    gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-    gl.uniform2fv(trailLocation, trail);
-    gl.uniform1i(trailCountLocation, trailCount);
-    gl.uniform1f(timeLocation, (now - startedAt) / 1000);
-    gl.uniform1f(opacityLocation, opacity);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (fadeProgress >= 1) {
+      clear();
+      return;
+    }
+    frame = requestAnimationFrame(animate);
+  };
 
-    if (opacity > 0 && trailCount) frame = requestAnimationFrame(draw);
-    else clear();
+  const ensureRunning = () => {
+    if (running) return;
+    running = true;
+    frame = requestAnimationFrame(animate);
   };
 
   const onPointerMove = (event: PointerEvent) => {
     if (!isEnabled() || event.pointerType === "touch") return;
-    target.x = event.clientX / innerWidth;
-    target.y = 1 - event.clientY / innerHeight;
+    currentMouse.set(event.clientX / innerWidth, 1 - event.clientY / innerHeight);
     lastMoveAt = performance.now();
-    if (!hasPointer) {
-      ghost.x = target.x;
-      ghost.y = target.y;
-      startedAt = lastMoveAt;
+    if (!hasPointer || material.uniforms.iOpacity.value <= 0.001) {
+      resetTrail(currentMouse);
       hasPointer = true;
     }
-    if (!frame) frame = requestAnimationFrame(draw);
+    ensureRunning();
   };
 
   const onAvailabilityChange = () => {
@@ -278,16 +369,19 @@ export function attachPanelCursorTrail(): () => void {
     onAvailabilityChange,
     options,
   );
+  document.addEventListener("visibilitychange", onAvailabilityChange, options);
   reducedMotion.addEventListener("change", onAvailabilityChange, options);
   compactViewport.addEventListener("change", onAvailabilityChange, options);
 
   return () => {
     clear();
     events.abort();
-    gl.bindVertexArray(null);
-    if (vertexArray) gl.deleteVertexArray(vertexArray);
-    gl.deleteProgram(program);
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    scene.clear();
+    geometry.dispose();
+    material.dispose();
+    composer.dispose();
+    renderer.dispose();
+    renderer.forceContextLoss();
     canvas.remove();
   };
 }
