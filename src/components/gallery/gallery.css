@@ -1,6 +1,8 @@
 .portfolio-panel.portfolio-panel--gallery-construction {
   display: grid;
+  width: 100%;
   min-height: 100svh;
+  margin: 0;
   place-content: center;
   justify-items: center;
   padding: var(--gutter);
@@ -23,11 +25,6 @@
   width: min(100%, 260px);
   height: auto;
   opacity: 0.78;
-}
-@media (min-width: 769px) {
-  .portfolio-panel.portfolio-panel--gallery-construction {
-    padding-left: calc(var(--panel-rail-width) + var(--gutter));
-  }
 }
 .gallery-grid {
   display: grid;
