@@ -5,7 +5,7 @@ tags: [Java, Paper, Minecraft]
 order: 6
 media:
   type: image
-  src: /projects/mineplex.jpg
+  src: /projects/mineplex.webp
   alt: The Mineplex Minecraft server lobby beneath the Mineplex sign
 links:
   - label: GitHub

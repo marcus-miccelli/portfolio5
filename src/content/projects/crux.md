@@ -5,7 +5,7 @@ tags: [Next.js, Computer Vision, Supabase]
 order: 2
 media:
   type: image
-  src: /projects/crux.png
+  src: /projects/crux.webp
   alt: Crux climbing application preview
 links:
   - label: Live site

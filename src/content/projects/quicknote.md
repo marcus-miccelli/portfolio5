@@ -5,7 +5,7 @@ tags: [C, Win32, Markdown]
 order: 5
 media:
   type: image
-  src: /projects/quicknote-generated.png
+  src: /projects/quicknote-generated.webp
   alt: A polished preview of quickNote showing a Daily Focus note
 links:
   - label: GitHub

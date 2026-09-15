@@ -5,7 +5,7 @@ tags: [Godot, Multiplayer, Game Design]
 order: 3
 media:
   type: image
-  src: /projects/voyager3.png
+  src: /projects/voyager3.webp
   alt: Three players fighting with ray guns in the voyager3 space arena
 links:
   - label: GitHub

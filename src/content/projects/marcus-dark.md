@@ -5,7 +5,7 @@ tags: [VS Code, Theme Design, IBM Carbon]
 order: 4
 media:
   type: image
-  src: /projects/marcus-dark-syntax.png
+  src: /projects/marcus-dark-syntax.webp
   alt: Marcus Dark syntax colours shown in a VS Code editor
 links:
   - label: Install extension

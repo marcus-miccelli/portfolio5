@@ -6,7 +6,7 @@ order: 1
 badge: 3rd place · MACATHON 2026
 media:
   type: image
-  src: /projects/lobby.png
+  src: /projects/lobby.webp
   alt: Lobby residential community application interface
 links:
   - label: GitHub
