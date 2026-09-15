@@ -31,7 +31,6 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
   let positions = new Map<HTMLElement, Position>();
   let sizes = new Map<HTMLElement, Size>();
   let drag: DragState | null = null;
-  let dropTarget: HTMLElement | null = null;
   let frame = 0;
   let layoutFrame = 0;
   let enabled = false;
@@ -80,13 +79,6 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
     } catch {
       // Ignore malformed or blocked storage and retain the authored order.
     }
-  };
-
-  const setDropTarget = (tile: HTMLElement | null): void => {
-    if (dropTarget === tile) return;
-    dropTarget?.classList.remove("is-project-drop-target");
-    dropTarget = tile;
-    dropTarget?.classList.add("is-project-drop-target");
   };
 
   const visibleTiles = (): HTMLElement[] => tiles.filter((tile) => !tile.hidden);
@@ -191,11 +183,7 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
           : null;
     }
 
-    if (!targetTile) {
-      setDropTarget(null);
-      return;
-    }
-    setDropTarget(targetTile);
+    if (!targetTile) return;
 
     const from = tiles.indexOf(drag.tile);
     const to = tiles.indexOf(targetTile);
@@ -266,7 +254,6 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
     if (!finished.started) return;
 
     finished.tile.classList.remove("is-project-dragging");
-    setDropTarget(null);
     document.body.classList.remove("is-dragging-project");
     for (const tile of tiles) grid.append(tile);
     persistOrder();
@@ -282,7 +269,6 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
     if (drag?.tile.hasPointerCapture(drag.pointerId))
       drag.tile.releasePointerCapture(drag.pointerId);
     drag = null;
-    setDropTarget(null);
     positions.clear();
     sizes.clear();
     grid.classList.remove("is-project-grid", "is-project-grid-animating");
