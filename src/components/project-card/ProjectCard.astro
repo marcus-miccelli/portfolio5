@@ -28,15 +28,23 @@ const { title, summary, tags, badge, media: preview, links } = project.data;
         aria-label={`${title} links`}
       >
         {
-          links.map((link) => (
+          links.map((link, index) => (
             <a
               href={link.href}
               target="_blank"
               rel="noreferrer"
               aria-label={`${link.label} — opens in a new tab`}
               data-label={link.label}
+              style={`--project-link-index: ${index}`}
             >
-              <ProjectLinkIcon kind={projectLinkKind(link.href, link.kind)} />
+              <span class="project-card__link-icon">
+                <ProjectLinkIcon kind={projectLinkKind(link.href, link.kind)} />
+                <span class="project-card__link-shine" aria-hidden="true">
+                  <ProjectLinkIcon
+                    kind={projectLinkKind(link.href, link.kind)}
+                  />
+                </span>
+              </span>
             </a>
           ))
         }

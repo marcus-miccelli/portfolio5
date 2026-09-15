@@ -146,8 +146,56 @@
 }
 
 .project-card__links svg {
+  display: block;
   width: 15px;
   height: 15px;
+}
+
+.project-card__link-icon {
+  display: grid;
+  width: 15px;
+  height: 15px;
+}
+
+.project-card__link-icon > svg,
+.project-card__link-shine {
+  grid-area: 1 / 1;
+}
+
+.project-card__link-shine {
+  display: grid;
+  color: hsl(calc(212deg + var(--scene-hue, 0deg)) 82% 72%);
+  filter: drop-shadow(
+    0 0 3px hsl(calc(212deg + var(--scene-hue, 0deg)) 82% 72% / 0.36)
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+.project-tile:hover .project-card__link-shine,
+.project-card:focus-within .project-card__link-shine {
+  animation: project-link-wave 1600ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  animation-delay: calc(var(--project-link-index, 0) * 90ms);
+}
+
+@keyframes project-link-wave {
+  0%,
+  12%,
+  100% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  24% {
+    opacity: 0.62;
+  }
+  38% {
+    clip-path: inset(0 0 0 0);
+    opacity: 0.72;
+  }
+  54% {
+    clip-path: inset(0 0 0 100%);
+    opacity: 0;
+  }
 }
 
 .project-card__links a::after {
@@ -433,6 +481,12 @@
 
 @media (pointer: coarse) {
   .project-card__drag-handle {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-card__link-shine {
     display: none;
   }
 }
