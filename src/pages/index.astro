@@ -43,7 +43,7 @@ const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort
       </style>
     </noscript>
 
-    <section class="portfolio-panel" data-panel="about" hidden>
+    <section class="portfolio-panel" data-panel="about" data-preload hidden>
       <h1 data-panel-focus tabindex="-1">Hi, I'm Marcus.</h1>
       <p class="lede">This is my space on the web.</p>
       <p class="muted">
@@ -60,6 +60,7 @@ const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort
     <section
       class="portfolio-panel portfolio-panel--projects"
       data-panel="projects"
+      data-preload
       data-panel-focus
       aria-label="Projects"
       tabindex="-1"

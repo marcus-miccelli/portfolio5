@@ -8,6 +8,7 @@ import {
 import { attachControls } from "./components/scene/controls";
 import { attachGallery } from "./components/gallery/gallery";
 import { attachSocialIsland } from "./components/social/social-island";
+import { attachPanelPreloads } from "./components/shell/panel-preloads";
 import { attachPortfolioShell } from "./components/shell/shell";
 import { attachProjectFilters } from "./components/project-card/project-filters";
 import { attachProjectGrid } from "./components/project-card/project-grid";
@@ -43,6 +44,7 @@ function mountPage(): () => void {
     if (homeLink) disposers.push(attachEscapeHome(homeLink));
     if (shell && nav && shellBack)
       disposers.push(attachPortfolioShell(shell, nav, shellBack));
+    if (shell && scene) disposers.push(attachPanelPreloads(shell, scene));
     if (socialIsland) disposers.push(attachSocialIsland(socialIsland));
     if (projectFilters) disposers.push(attachProjectFilters(projectFilters));
     if (projectGrid) disposers.push(attachProjectGrid(projectGrid));
