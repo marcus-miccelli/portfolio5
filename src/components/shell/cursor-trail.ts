@@ -152,21 +152,21 @@ export function attachPanelCursorTrail(): () => void {
       }
       const head = trail.at(-1)!;
       context.lineTo(head.x, head.y);
-      context.lineWidth = head.width * [2.5, 1.15, 0.34][pass];
+      context.lineWidth = head.width * [3.2, 1.6, 0.42][pass];
       const gradient = context.createLinearGradient(
         trail[0].x,
         trail[0].y,
         head.x,
         head.y,
       );
-      const opacity = [0.035, 0.12, 0.42][pass] * masterOpacity;
-      const color = pass === 2 ? "215 232 255" : "130 175 227";
+      const opacity = [0.014, 0.045, 0.14][pass] * masterOpacity;
+      const color = pass === 2 ? "174 204 238" : "130 175 227";
       gradient.addColorStop(0, `rgb(${color} / 0)`);
       gradient.addColorStop(0.58, `rgb(${color} / ${opacity * 0.35})`);
       gradient.addColorStop(1, `rgb(${color} / ${opacity})`);
       context.strokeStyle = gradient;
-      context.shadowColor = `rgb(130 175 227 / ${0.3 * masterOpacity})`;
-      context.shadowBlur = [18, 10, 4][pass];
+      context.shadowColor = `rgb(130 175 227 / ${0.12 * masterOpacity})`;
+      context.shadowBlur = [26, 16, 7][pass];
       context.stroke();
     }
   };
@@ -186,10 +186,10 @@ export function attachPanelCursorTrail(): () => void {
         rotation + Math.sign(wisp.curl) * 1.7,
         wisp.curl < 0,
       );
-      context.strokeStyle = `rgb(130 175 227 / ${alpha * 0.13})`;
+      context.strokeStyle = `rgb(130 175 227 / ${alpha * 0.045})`;
       context.lineWidth = 1.2;
-      context.shadowColor = `rgb(130 175 227 / ${alpha * 0.25})`;
-      context.shadowBlur = 9;
+      context.shadowColor = `rgb(130 175 227 / ${alpha * 0.09})`;
+      context.shadowBlur = 14;
       context.stroke();
     });
   };
