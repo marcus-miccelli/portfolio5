@@ -4,13 +4,13 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
-const TRAIL_LENGTH = 50;
+const TRAIL_LENGTH = 30;
 const INERTIA = 0.5;
 const GRAIN_INTENSITY = 0.05;
-const BLOOM_STRENGTH = 0.1;
+const BLOOM_STRENGTH = 0.055;
 const BLOOM_RADIUS = 1;
 const BLOOM_THRESHOLD = 0.025;
-const BRIGHTNESS = 2;
+const BRIGHTNESS = 0.9;
 const MAX_DEVICE_PIXEL_RATIO = 0.5;
 const TARGET_PIXELS = 1_300_000;
 const FADE_DELAY = 1000;
@@ -62,8 +62,8 @@ const fragmentShader = `
     return value;
   }
 
-  vec3 tint1(vec3 base) { return mix(base, vec3(1.0), 0.15); }
-  vec3 tint2(vec3 base) { return mix(base, vec3(0.8, 0.9, 1.0), 0.25); }
+  vec3 tint1(vec3 base) { return mix(base, vec3(1.0), 0.04); }
+  vec3 tint2(vec3 base) { return mix(base, vec3(0.8, 0.9, 1.0), 0.08); }
 
   vec4 blob(vec2 p, vec2 mousePosition, float intensity, float activity) {
     vec2 q = vec2(
@@ -75,7 +75,7 @@ const fragmentShader = `
       fbm(p * iScale + q * 1.5 + vec2(8.3, 2.8) + iTime * 0.15)
     );
     float smoke = fbm(p * iScale + r * 0.8);
-    float radius = 0.5 + 0.3 * (1.0 / iScale);
+    float radius = 0.34 + 0.18 * (1.0 / iScale);
     float distanceFactor = 1.0 - smoothstep(
       0.0,
       radius * activity,
@@ -97,16 +97,16 @@ const fragmentShader = `
     vec3 color = vec3(0.0);
     float alpha = 0.0;
 
-    vec4 head = blob(uv, mouse, 1.0, iOpacity);
+    vec4 head = blob(uv, mouse, 0.72, iOpacity);
     color += head.rgb;
     alpha += head.a;
 
     for (int i = 0; i < MAX_TRAIL_LENGTH; i++) {
       vec2 previous = (iPrevMouse[i] * 2.0 - 1.0) * aspect;
       float strength = 1.0 - float(i) / float(MAX_TRAIL_LENGTH);
-      strength = pow(strength, 2.0);
+      strength = pow(strength, 2.4);
       if (strength > 0.01) {
-        vec4 trail = blob(uv, previous, strength * 0.8, iOpacity);
+        vec4 trail = blob(uv, previous, strength * 0.34, iOpacity);
         color += trail.rgb;
         alpha += trail.a;
       }
