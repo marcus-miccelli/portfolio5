@@ -15,6 +15,10 @@ type DragState = {
   lastSortAt: number;
 };
 
+const isInteractive = (target: EventTarget | null): boolean =>
+  target instanceof Element &&
+  Boolean(target.closest("a, button, input, select, textarea"));
+
 export function attachProjectGrid(grid: HTMLElement): () => void {
   const media = matchMedia("(min-width: 681px) and (pointer: fine)");
   const events = new AbortController();
@@ -211,12 +215,11 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
   };
 
   const onPointerDown = (event: PointerEvent): void => {
-    if (!enabled || event.button !== 0) return;
-    const handle =
+    if (!enabled || event.button !== 0 || isInteractive(event.target)) return;
+    const tile =
       event.target instanceof Element
-        ? event.target.closest<HTMLElement>("[data-project-drag-handle]")
+        ? event.target.closest<HTMLElement>(".project-tile")
         : null;
-    const tile = handle?.closest<HTMLElement>(".project-tile") ?? null;
     const position = tile ? positions.get(tile) : null;
     if (!tile || !position) return;
 
