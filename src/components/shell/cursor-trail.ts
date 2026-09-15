@@ -1,46 +1,182 @@
-interface TrailSample {
-  x: number;
-  y: number;
-  width: number;
-  opacity: number;
-  phase: number;
+const MAX_TRAIL_POINTS = 38;
+const RENDER_SCALE = 0.46;
+const FADE_DELAY = 720;
+const FADE_DURATION = 1700;
+
+const vertexShaderSource = `#version 300 es
+precision highp float;
+
+const vec2 positions[3] = vec2[3](
+  vec2(-1.0, -1.0),
+  vec2(3.0, -1.0),
+  vec2(-1.0, 3.0)
+);
+
+void main() {
+  gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
+}`;
+
+const fragmentShaderSource = `#version 300 es
+precision highp float;
+
+#define MAX_TRAIL_POINTS ${MAX_TRAIL_POINTS}
+
+uniform vec2 uResolution;
+uniform vec2 uTrail[MAX_TRAIL_POINTS];
+uniform int uTrailCount;
+uniform float uTime;
+uniform float uOpacity;
+out vec4 outputColor;
+
+float hash(vec2 point) {
+  return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
-interface Wisp {
-  x: number;
-  y: number;
-  velocityX: number;
-  velocityY: number;
-  radius: number;
-  age: number;
-  lifetime: number;
-  curl: number;
+float noise(vec2 point) {
+  vec2 cell = floor(point);
+  vec2 local = fract(point);
+  local = local * local * (3.0 - 2.0 * local);
+  return mix(
+    mix(hash(cell), hash(cell + vec2(1.0, 0.0)), local.x),
+    mix(hash(cell + vec2(0.0, 1.0)), hash(cell + 1.0), local.x),
+    local.y
+  );
 }
 
-const RENDER_SCALE = 0.55;
-const MAX_TRAIL_SAMPLES = 34;
-const MAX_WISPS = 48;
-const FADE_DELAY = 620;
-const FADE_DURATION = 1500;
+float fbm(vec2 point) {
+  float value = 0.0;
+  float amplitude = 0.5;
+  mat2 turn = mat2(0.8776, 0.4794, -0.4794, 0.8776);
+  for (int octave = 0; octave < 4; octave++) {
+    value += amplitude * noise(point);
+    point = turn * point * 2.03;
+    amplitude *= 0.5;
+  }
+  return value;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uResolution;
+  float aspect = uResolution.x / uResolution.y;
+  vec2 field = vec2(uv.x * aspect, uv.y);
+
+  vec2 turbulence = vec2(
+    fbm(field * 5.2 + vec2(uTime * 0.055, 1.7)),
+    fbm(field * 5.2 + vec2(-2.4, uTime * 0.045))
+  ) - 0.5;
+  vec2 fineTurbulence = vec2(
+    noise(field * 13.0 - uTime * 0.08),
+    noise(field.yx * 15.0 + uTime * 0.065)
+  ) - 0.5;
+
+  float dye = 0.0;
+  float bloom = 0.0;
+  float wake = 0.0;
+  for (int index = 0; index < MAX_TRAIL_POINTS; index++) {
+    if (index >= uTrailCount) break;
+    float age = float(index) / float(MAX_TRAIL_POINTS - 1);
+    float strength = pow(1.0 - age, 1.45);
+    vec2 point = vec2(uTrail[index].x * aspect, uTrail[index].y);
+    vec2 offset = field - point;
+
+    vec2 previous = point;
+    if (index + 1 < uTrailCount)
+      previous = vec2(uTrail[index + 1].x * aspect, uTrail[index + 1].y);
+    vec2 motion = point - previous;
+    vec2 normal = normalize(vec2(-motion.y, motion.x) + vec2(0.0001));
+    float motionForce = min(length(motion) * 42.0, 1.0);
+
+    vec2 warped = offset;
+    warped += turbulence * (0.025 + age * 0.018);
+    warped += fineTurbulence * 0.008;
+    warped += normal * sin(age * 18.0 + uTime * 1.35) * motionForce * 0.012;
+
+    float distanceSquared = dot(warped, warped);
+    float core = exp(-distanceSquared * mix(1250.0, 620.0, age));
+    float mist = exp(-distanceSquared * mix(260.0, 125.0, age));
+    dye += core * strength * 0.28 + mist * strength * 0.048;
+    bloom += exp(-distanceSquared * 58.0) * strength * 0.012;
+
+    float curlBand = abs(length(warped) - (0.022 + motionForce * 0.018));
+    wake += exp(-curlBand * 155.0) * motionForce * strength * 0.013;
+  }
+
+  float textureNoise = noise(gl_FragCoord.xy * 0.42 + uTime * 17.0) - 0.5;
+  float alpha = clamp((dye + bloom + wake) * uOpacity, 0.0, 0.32);
+  vec3 base = vec3(0.51, 0.69, 0.89);
+  vec3 highlight = vec3(0.68, 0.80, 0.94);
+  vec3 color = mix(base, highlight, clamp(dye * 1.8, 0.0, 1.0));
+  color *= 0.88 + textureNoise * 0.045;
+  outputColor = vec4(color * alpha, alpha);
+}`;
+
+function createShader(
+  gl: WebGL2RenderingContext,
+  type: number,
+  source: string,
+): WebGLShader | null {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return shader;
+  gl.deleteShader(shader);
+  return null;
+}
 
 export function attachPanelCursorTrail(): () => void {
   const canvas = document.createElement("canvas");
   canvas.className = "panel-cursor-trail";
   canvas.setAttribute("aria-hidden", "true");
-  const context = canvas.getContext("2d");
-  if (!context) return () => {};
+  const gl = canvas.getContext("webgl2", {
+    alpha: true,
+    antialias: false,
+    depth: false,
+    premultipliedAlpha: true,
+    powerPreference: "low-power",
+  });
+  if (!gl) return () => {};
 
+  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+  const fragmentShader = createShader(
+    gl,
+    gl.FRAGMENT_SHADER,
+    fragmentShaderSource,
+  );
+  const program = gl.createProgram();
+  if (!vertexShader || !fragmentShader || !program) {
+    if (vertexShader) gl.deleteShader(vertexShader);
+    if (fragmentShader) gl.deleteShader(fragmentShader);
+    return () => {};
+  }
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  gl.deleteShader(vertexShader);
+  gl.deleteShader(fragmentShader);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    gl.deleteProgram(program);
+    return () => {};
+  }
+
+  const resolutionLocation = gl.getUniformLocation(program, "uResolution");
+  const trailLocation = gl.getUniformLocation(program, "uTrail[0]");
+  const trailCountLocation = gl.getUniformLocation(program, "uTrailCount");
+  const timeLocation = gl.getUniformLocation(program, "uTime");
+  const opacityLocation = gl.getUniformLocation(program, "uOpacity");
+  const vertexArray = gl.createVertexArray();
   const events = new AbortController();
   const options = { signal: events.signal };
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const compactViewport = matchMedia("(max-width: 600px)");
-  const trail: TrailSample[] = [];
-  const wisps: Wisp[] = [];
-  const pointer = { x: 0, y: 0 };
-  const ghost = { x: 0, y: 0, velocityX: 0, velocityY: 0 };
+  const trail = new Float32Array(MAX_TRAIL_POINTS * 2);
+  const target = { x: 0.5, y: 0.5 };
+  const ghost = { x: 0.5, y: 0.5 };
+  let trailCount = 0;
   let hasPointer = false;
   let lastMoveAt = 0;
   let lastFrameAt = 0;
+  let startedAt = 0;
   let frame = 0;
 
   const isEnabled = () => {
@@ -57,229 +193,73 @@ export function attachPanelCursorTrail(): () => void {
     canvas.height = Math.max(1, Math.round(innerHeight * RENDER_SCALE));
     canvas.style.width = `${innerWidth}px`;
     canvas.style.height = `${innerHeight}px`;
-    context.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+    gl.viewport(0, 0, canvas.width, canvas.height);
   };
 
   const clear = () => {
-    trail.length = 0;
-    wisps.length = 0;
-    hasPointer = false;
-    lastFrameAt = 0;
     cancelAnimationFrame(frame);
     frame = 0;
-    context.clearRect(0, 0, innerWidth, innerHeight);
+    trailCount = 0;
+    hasPointer = false;
+    lastFrameAt = 0;
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
   };
 
-  const addWisps = (speed: number) => {
-    const count = Math.min(4, Math.max(1, Math.round(speed / 13)));
-    for (let index = 0; index < count; index += 1) {
-      const side = index % 2 ? 1 : -1;
-      const spread = Math.min(1, speed / 32);
-      wisps.push({
-        x: ghost.x,
-        y: ghost.y,
-        velocityX: ghost.velocityX * 0.2 + side * (0.4 + spread),
-        velocityY: ghost.velocityY * 0.2 - side * (0.4 + spread),
-        radius: 2.5 + Math.random() * 4 + spread * 2,
-        age: 0,
-        lifetime: 820 + Math.random() * 680,
-        curl: side * (0.012 + Math.random() * 0.012),
-      });
-    }
-    if (wisps.length > MAX_WISPS)
-      wisps.splice(0, wisps.length - MAX_WISPS);
-  };
-
-  const update = (now: number, delta: number) => {
-    const pull = 1 - Math.pow(0.68, delta / 16.67);
-    const previousX = ghost.x;
-    const previousY = ghost.y;
-    ghost.x += (pointer.x - ghost.x) * pull;
-    ghost.y += (pointer.y - ghost.y) * pull;
-    ghost.velocityX = ghost.x - previousX;
-    ghost.velocityY = ghost.y - previousY;
-    const speed = Math.hypot(ghost.velocityX, ghost.velocityY);
-
-    if (now - lastMoveAt < 110 || speed > 0.18) {
-      trail.push({
-        x: ghost.x,
-        y: ghost.y,
-        width: Math.min(15, 5 + speed * 0.36),
-        opacity: 1,
-        phase: Math.random() * Math.PI * 2,
-      });
-      if (trail.length > MAX_TRAIL_SAMPLES) trail.shift();
-      if (speed > 1.25) addWisps(speed);
-    }
-
-    trail.forEach((sample) => {
-      sample.opacity *= Math.pow(0.985, delta / 16.67);
-    });
-    while (trail.length && trail[0].opacity < 0.025) trail.shift();
-
-    wisps.forEach((wisp) => {
-      wisp.age += delta;
-      const angle = wisp.curl * delta;
-      const cosine = Math.cos(angle);
-      const sine = Math.sin(angle);
-      const velocityX = wisp.velocityX * cosine - wisp.velocityY * sine;
-      wisp.velocityY =
-        (wisp.velocityX * sine + wisp.velocityY * cosine) * 0.985;
-      wisp.velocityX = velocityX * 0.985;
-      wisp.x += wisp.velocityX * (delta / 16.67);
-      wisp.y += wisp.velocityY * (delta / 16.67);
-      wisp.radius += delta * 0.004;
-    });
-    while (wisps.length && wisps[0].age >= wisps[0].lifetime) wisps.shift();
-  };
-
-  const drawRibbon = (masterOpacity: number) => {
-    if (trail.length < 2) return;
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.globalCompositeOperation = "lighter";
-
-    for (let pass = 0; pass < 3; pass += 1) {
-      context.beginPath();
-      context.moveTo(trail[0].x, trail[0].y);
-      for (let index = 1; index < trail.length - 1; index += 1) {
-        const current = trail[index];
-        const next = trail[index + 1];
-        context.quadraticCurveTo(
-          current.x,
-          current.y,
-          (current.x + next.x) / 2,
-          (current.y + next.y) / 2,
-        );
-      }
-      const head = trail.at(-1)!;
-      context.lineTo(head.x, head.y);
-      context.lineWidth = head.width * [3.2, 1.6, 0.42][pass];
-      const gradient = context.createLinearGradient(
-        trail[0].x,
-        trail[0].y,
-        head.x,
-        head.y,
-      );
-      const opacity = [0.014, 0.045, 0.14][pass] * masterOpacity;
-      const color = pass === 2 ? "174 204 238" : "130 175 227";
-      gradient.addColorStop(0, `rgb(${color} / 0)`);
-      gradient.addColorStop(0.58, `rgb(${color} / ${opacity * 0.35})`);
-      gradient.addColorStop(1, `rgb(${color} / ${opacity})`);
-      context.strokeStyle = gradient;
-      context.shadowColor = `rgb(130 175 227 / ${0.12 * masterOpacity})`;
-      context.shadowBlur = [26, 16, 7][pass];
-      context.stroke();
-    }
-  };
-
-  const drawMist = (now: number, masterOpacity: number) => {
-    context.globalCompositeOperation = "lighter";
-    for (let index = 0; index < trail.length; index += 2) {
-      const sample = trail[index];
-      const tail = index / Math.max(1, trail.length - 1);
-      const drift = Math.sin(now * 0.0018 + sample.phase) * 4;
-      const radius = sample.width * (2.5 + tail * 1.5);
-      const gradient = context.createRadialGradient(
-        sample.x + drift,
-        sample.y - drift * 0.45,
-        0,
-        sample.x + drift,
-        sample.y - drift * 0.45,
-        radius,
-      );
-      const opacity = sample.opacity * masterOpacity * (0.018 + tail * 0.018);
-      gradient.addColorStop(0, `rgb(130 175 227 / ${opacity})`);
-      gradient.addColorStop(0.42, `rgb(130 175 227 / ${opacity * 0.42})`);
-      gradient.addColorStop(1, "rgb(130 175 227 / 0)");
-      context.fillStyle = gradient;
-      context.fillRect(
-        sample.x + drift - radius,
-        sample.y - drift * 0.45 - radius,
-        radius * 2,
-        radius * 2,
-      );
-    }
-  };
-
-  const drawGhostHead = (masterOpacity: number) => {
-    const radius = 24;
-    const gradient = context.createRadialGradient(
-      ghost.x,
-      ghost.y,
-      0,
-      ghost.x,
-      ghost.y,
-      radius,
-    );
-    gradient.addColorStop(
-      0,
-      `rgb(174 204 238 / ${0.085 * masterOpacity})`,
-    );
-    gradient.addColorStop(
-      0.22,
-      `rgb(130 175 227 / ${0.055 * masterOpacity})`,
-    );
-    gradient.addColorStop(1, "rgb(130 175 227 / 0)");
-    context.fillStyle = gradient;
-    context.fillRect(ghost.x - radius, ghost.y - radius, radius * 2, radius * 2);
-  };
-
-  const drawWisps = (masterOpacity: number) => {
-    context.globalCompositeOperation = "lighter";
-    wisps.forEach((wisp) => {
-      const life = 1 - wisp.age / wisp.lifetime;
-      const alpha = life * masterOpacity;
-      const rotation = wisp.age * 0.006 * Math.sign(wisp.curl);
-      context.beginPath();
-      context.arc(
-        wisp.x,
-        wisp.y,
-        wisp.radius,
-        rotation,
-        rotation + Math.sign(wisp.curl) * 1.7,
-        wisp.curl < 0,
-      );
-      context.strokeStyle = `rgb(130 175 227 / ${alpha * 0.045})`;
-      context.lineWidth = 1.2;
-      context.shadowColor = `rgb(130 175 227 / ${alpha * 0.09})`;
-      context.shadowBlur = 14;
-      context.stroke();
-    });
+  const pushTrailPoint = (x: number, y: number) => {
+    const usedLength = Math.min(trailCount, MAX_TRAIL_POINTS - 1) * 2;
+    trail.copyWithin(2, 0, usedLength);
+    trail[0] = x;
+    trail[1] = y;
+    trailCount = Math.min(MAX_TRAIL_POINTS, trailCount + 1);
   };
 
   const draw = (now: number) => {
     frame = 0;
-    const delta = Math.min(32, lastFrameAt ? now - lastFrameAt : 16.67);
+    const delta = Math.min(34, lastFrameAt ? now - lastFrameAt : 16.67);
     lastFrameAt = now;
-    const idleFor = now - lastMoveAt;
+    const pull = 1 - Math.pow(0.72, delta / 16.67);
+    const previousX = ghost.x;
+    const previousY = ghost.y;
+    ghost.x += (target.x - ghost.x) * pull;
+    ghost.y += (target.y - ghost.y) * pull;
+    const distance = Math.hypot(ghost.x - previousX, ghost.y - previousY);
+    if (now - lastMoveAt < 130 || distance > 0.00018)
+      pushTrailPoint(ghost.x, ghost.y);
+
     const fadeProgress = Math.min(
       1,
-      Math.max(0, (idleFor - FADE_DELAY) / FADE_DURATION),
+      Math.max(0, (now - lastMoveAt - FADE_DELAY) / FADE_DURATION),
     );
     const easedFade = fadeProgress * fadeProgress * (3 - 2 * fadeProgress);
-    const masterOpacity = Math.pow(1 - easedFade, 1.35);
+    const opacity = Math.pow(1 - easedFade, 1.4);
 
-    update(now, delta);
-    context.clearRect(0, 0, innerWidth, innerHeight);
-    drawMist(now, masterOpacity);
-    drawRibbon(masterOpacity);
-    drawWisps(masterOpacity);
-    drawGhostHead(masterOpacity);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(program);
+    gl.bindVertexArray(vertexArray);
+    gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+    gl.uniform2fv(trailLocation, trail);
+    gl.uniform1i(trailCountLocation, trailCount);
+    gl.uniform1f(timeLocation, (now - startedAt) / 1000);
+    gl.uniform1f(opacityLocation, opacity);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    if (masterOpacity > 0 && (trail.length || wisps.length))
-      frame = requestAnimationFrame(draw);
+    if (opacity > 0 && trailCount) frame = requestAnimationFrame(draw);
     else clear();
   };
 
   const onPointerMove = (event: PointerEvent) => {
     if (!isEnabled() || event.pointerType === "touch") return;
-    pointer.x = event.clientX;
-    pointer.y = event.clientY;
+    target.x = event.clientX / innerWidth;
+    target.y = 1 - event.clientY / innerHeight;
     lastMoveAt = performance.now();
     if (!hasPointer) {
-      ghost.x = pointer.x;
-      ghost.y = pointer.y;
+      ghost.x = target.x;
+      ghost.y = target.y;
+      startedAt = lastMoveAt;
       hasPointer = true;
     }
     if (!frame) frame = requestAnimationFrame(draw);
@@ -304,6 +284,10 @@ export function attachPanelCursorTrail(): () => void {
   return () => {
     clear();
     events.abort();
+    gl.bindVertexArray(null);
+    if (vertexArray) gl.deleteVertexArray(vertexArray);
+    gl.deleteProgram(program);
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
     canvas.remove();
   };
 }
