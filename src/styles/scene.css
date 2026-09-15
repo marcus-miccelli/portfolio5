@@ -66,11 +66,6 @@ orbit-scene[data-hue-transition="true"] .universe {
     visibility 0s linear var(--scene-reveal-duration);
   pointer-events: none;
 }
-/* Additive overlap prevents the two half-opacity frames dimming mid-crossfade. */
-orbit-scene[data-planet-renderer="gpu"] .planet,
-orbit-scene[data-planet-renderer="gpu"] .planet-render {
-  mix-blend-mode: plus-lighter;
-}
 orbit-scene[data-planet-renderer="gpu"]:not([data-mode="source"])
   .planet-render {
   visibility: visible;
