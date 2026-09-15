@@ -28,7 +28,8 @@ export function attachFogText(
   let mode = scene.getMode(),
     animationFrame = 0,
     alignmentFrame = 0,
-    revealFrame = 0;
+    revealFrame = 0,
+    textureVersion = 0;
   let textureUrl: string | undefined,
     disposed = false,
     presentationRevealed = false,
@@ -91,14 +92,32 @@ export function attachFogText(
       });
     });
   };
-  const renderTexture = (next: FogTexture) => {
+  const renderTexture = async (next: FogTexture, version: number) => {
+    let nextUrl: string | undefined;
     try {
-      if (disposed || mobileEffects.matches) return;
-      const nextUrl = URL.createObjectURL(next.blob);
+      if (
+        disposed ||
+        version !== textureVersion ||
+        mobileEffects.matches
+      )
+        return;
+      nextUrl = URL.createObjectURL(next.blob);
+      const image = new Image();
+      image.src = nextUrl;
+      await image.decode();
+      if (
+        disposed ||
+        version !== textureVersion ||
+        mobileEffects.matches
+      ) {
+        URL.revokeObjectURL(nextUrl);
+        return;
+      }
       if (textureUrl) URL.revokeObjectURL(textureUrl);
       textureUrl = nextUrl;
+      nextUrl = undefined;
       field = next;
-      nav.style.setProperty("--fog-image", `url("${nextUrl}")`);
+      nav.style.setProperty("--fog-image", `url("${textureUrl}")`);
       nav.style.setProperty(
         "--fog-size",
         `${next.viewport.width * FOG.displayScale}px ${next.viewport.height * FOG.displayScale}px`,
@@ -108,7 +127,8 @@ export function attachFogText(
       scene.markEffectsSettled();
       reveal();
     } catch (error) {
-      if (disposed) return;
+      if (nextUrl) URL.revokeObjectURL(nextUrl);
+      if (disposed || version !== textureVersion) return;
       console.warn("Navigation fog unavailable", error);
       scene.markEffectsSettled();
     }
@@ -137,7 +157,8 @@ export function attachFogText(
   };
   const unsubscribeFog = scene.subscribeFog(
     (next) => {
-      renderTexture(next);
+      const version = ++textureVersion;
+      void renderTexture(next, version);
     },
     preset.raster,
   );
@@ -164,6 +185,7 @@ export function attachFogText(
     "change",
     () => {
       if (mobileEffects.matches) {
+        textureVersion++;
         cancelAnimationFrame(revealFrame);
         revealFrame = 0;
         clearTexture();
@@ -180,6 +202,7 @@ export function attachFogText(
   document.fonts.ready.then(align);
   return () => {
     disposed = true;
+    textureVersion++;
     cancelAnimationFrame(animationFrame);
     cancelAnimationFrame(alignmentFrame);
     cancelAnimationFrame(revealFrame);
