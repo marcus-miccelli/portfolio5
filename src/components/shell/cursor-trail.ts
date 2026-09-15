@@ -29,6 +29,7 @@ const fragmentShader = `
   uniform vec3 iResolution;
   uniform vec2 iMouse;
   uniform vec2 iPrevMouse[MAX_TRAIL_LENGTH];
+  uniform int iTrailCount;
   uniform float iOpacity;
   uniform float iScale;
   uniform vec3 iBaseColor;
@@ -100,7 +101,7 @@ const fragmentShader = `
     float smoke = fbm(
       domain * iScale + positionPhase * 0.3 + r * 0.8
     );
-    float textureDensity = mix(0.16, 0.62, pow(smoke, 1.8));
+    float textureDensity = mix(0.26, 0.38, pow(smoke, 1.8));
     float radius = 0.27 + 0.13 * (1.0 / iScale);
     float distanceFactor = 1.0 - smoothstep(
       0.0,
@@ -128,6 +129,7 @@ const fragmentShader = `
     alpha += head.a;
 
     for (int i = 0; i < MAX_TRAIL_LENGTH; i++) {
+      if (i >= iTrailCount) break;
       vec2 previous = (iPrevMouse[i] * 2.0 - 1.0) * aspect;
       float strength = 1.0 - float(i) / float(MAX_TRAIL_LENGTH);
       strength = pow(strength, 2.4);
@@ -231,6 +233,7 @@ export function attachPanelCursorTrail(): () => void {
       iResolution: { value: new THREE.Vector3(1, 1, 1) },
       iMouse: { value: new THREE.Vector2(0.5, 0.5) },
       iPrevMouse: { value: trail.map((point) => point.clone()) },
+      iTrailCount: { value: 0 },
       iOpacity: { value: 0 },
       iScale: { value: 1 },
       iBaseColor: { value: new THREE.Vector3(0.51, 0.69, 0.89) },
@@ -265,6 +268,7 @@ export function attachPanelCursorTrail(): () => void {
   const currentMouse = new THREE.Vector2(0.5, 0.5);
   const velocity = new THREE.Vector2();
   let head = 0;
+  let trailCount = 0;
   let frame = 0;
   let running = false;
   let hasPointer = false;
@@ -286,8 +290,10 @@ export function attachPanelCursorTrail(): () => void {
     const shaderTrail = material.uniforms.iPrevMouse.value as THREE.Vector2[];
     shaderTrail.forEach((entry) => entry.copy(point));
     material.uniforms.iMouse.value.copy(point);
+    material.uniforms.iTrailCount.value = 0;
     velocity.set(0, 0);
     head = 0;
+    trailCount = 0;
   };
 
   const resize = () => {
@@ -340,13 +346,18 @@ export function attachPanelCursorTrail(): () => void {
       if (velocity.lengthSq() > 0.000001) mouse.add(velocity);
     }
 
-    head = (head + 1) % TRAIL_LENGTH;
-    trail[head].copy(mouse);
+    const minimumDistance = 3 / Math.max(1, Math.min(innerWidth, innerHeight));
+    if (mouse.distanceToSquared(trail[head]) >= minimumDistance ** 2) {
+      head = (head + 1) % TRAIL_LENGTH;
+      trail[head].copy(mouse);
+      trailCount = Math.min(TRAIL_LENGTH, trailCount + 1);
+    }
     const shaderTrail = material.uniforms.iPrevMouse.value as THREE.Vector2[];
-    for (let index = 0; index < TRAIL_LENGTH; index += 1) {
+    for (let index = 0; index < trailCount; index += 1) {
       const source = (head - index + TRAIL_LENGTH) % TRAIL_LENGTH;
       shaderTrail[index].copy(trail[source]);
     }
+    material.uniforms.iTrailCount.value = trailCount;
 
     const fadeProgress = Math.min(
       1,
