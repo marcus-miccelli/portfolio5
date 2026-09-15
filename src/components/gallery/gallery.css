@@ -1,24 +1,33 @@
+.portfolio-panel.portfolio-panel--gallery-construction {
+  display: grid;
+  min-height: 100svh;
+  place-content: center;
+  justify-items: center;
+  padding: var(--gutter);
+}
 .gallery-construction {
   display: grid;
-  width: min(100%, 31rem);
-  justify-items: start;
+  justify-items: center;
   gap: 22px;
-  padding-top: 32px;
-  border-top: 1px solid var(--line);
-  margin-top: 48px;
+  text-align: center;
 }
-.gallery-construction__label {
+.gallery-construction:focus {
+  outline: none;
+}
+.gallery-construction p {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 .gallery-construction img {
   display: block;
   width: min(100%, 260px);
   height: auto;
   opacity: 0.78;
+}
+@media (min-width: 769px) {
+  .portfolio-panel.portfolio-panel--gallery-construction {
+    padding-left: calc(var(--panel-rail-width) + var(--gutter));
+  }
 }
 .gallery-grid {
   display: grid;

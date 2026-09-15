@@ -111,13 +111,19 @@ const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort
       </div>
     </section>
 
-    <section class="portfolio-panel" data-panel="gallery" hidden>
-      <h1 data-panel-focus tabindex="-1">A closer look.</h1>
-      <p class="lede">A space for images and visual experiments.</p>
+    <section
+      class:list={[
+        "portfolio-panel",
+        images.length === 0 && "portfolio-panel--gallery-construction",
+      ]}
+      data-panel="gallery"
+      hidden
+    >
+      {images.length > 0 && <h1 data-panel-focus tabindex="-1">Gallery</h1>}
       {
         images.length === 0 ? (
-          <div class="gallery-construction">
-            <p class="gallery-construction__label">Under construction.</p>
+          <div class="gallery-construction" data-panel-focus tabindex="-1">
+            <p>under construction!</p>
             <img
               src="/gallery/be-lucky-best-of-luck.gif"
               width="498"
