@@ -116,7 +116,17 @@ const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort
       <p class="lede">A space for images and visual experiments.</p>
       {
         images.length === 0 ? (
-          <p class="empty-state">Nothing here just yet.</p>
+          <div class="gallery-construction">
+            <p class="gallery-construction__label">Under construction.</p>
+            <img
+              src="/gallery/be-lucky-best-of-luck.gif"
+              width="498"
+              height="498"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
         ) : (
           <div data-gallery>
             <div class="gallery-grid">

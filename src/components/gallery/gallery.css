@@ -1,3 +1,25 @@
+.gallery-construction {
+  display: grid;
+  width: min(100%, 31rem);
+  justify-items: start;
+  gap: 22px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  margin-top: 48px;
+}
+.gallery-construction__label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.gallery-construction img {
+  display: block;
+  width: min(100%, 260px);
+  height: auto;
+  opacity: 0.78;
+}
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
