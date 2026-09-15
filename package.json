@@ -9,8 +9,7 @@
     "preview": "astro preview --host 127.0.0.1 --port 4321"
   },
   "dependencies": {
-    "astro": "7.3.1",
-    "three": "^0.186.0"
+    "astro": "7.3.1"
   },
   "devDependencies": {
     "typescript": "7.0.2"
