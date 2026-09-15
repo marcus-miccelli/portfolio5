@@ -67,22 +67,47 @@ const fragmentShader = `
 
   vec4 blob(vec2 p, vec2 mousePosition, float intensity, float activity) {
     vec2 local = p - mousePosition;
+    float angle = dot(mousePosition, vec2(3.7, -2.9))
+      + sin((mousePosition.x + mousePosition.y) * 6.2832) * 0.42;
+    mat2 orientation = mat2(
+      cos(angle),
+      sin(angle),
+      -sin(angle),
+      cos(angle)
+    );
+    vec2 domain = orientation * local;
+    vec2 positionPhase = mousePosition * vec2(4.1, 3.3);
     vec2 q = vec2(
-      fbm(local * iScale + iTime * 0.1),
-      fbm(local * iScale + vec2(5.2, 1.3) + iTime * 0.1)
+      fbm(domain * iScale + positionPhase + iTime * 0.1),
+      fbm(
+        domain * iScale
+          + positionPhase.yx
+          + vec2(5.2, 1.3)
+          + iTime * 0.1
+      )
     );
     vec2 r = vec2(
-      fbm(local * iScale + q * 1.5 + iTime * 0.15),
-      fbm(local * iScale + q * 1.5 + vec2(8.3, 2.8) + iTime * 0.15)
+      fbm(domain * iScale + positionPhase * 0.55 + q * 1.5 + iTime * 0.15),
+      fbm(
+        domain * iScale
+          + positionPhase.yx * 0.55
+          + q * 1.5
+          + vec2(8.3, 2.8)
+          + iTime * 0.15
+      )
     );
-    float smoke = fbm(local * iScale + r * 0.8);
+    vec2 warped = domain + (r - 0.5) * 0.08 * (0.35 + length(local));
+    float smoke = fbm(
+      domain * iScale + positionPhase * 0.3 + r * 0.8
+    );
+    float textureDensity = mix(0.16, 0.62, pow(smoke, 1.8));
     float radius = 0.34 + 0.18 * (1.0 / iScale);
     float distanceFactor = 1.0 - smoothstep(
       0.0,
       radius * activity,
-      length(local)
+      length(warped)
     );
-    float alpha = pow(smoke, 2.5) * distanceFactor;
+    float alpha = textureDensity * distanceFactor;
     vec3 color = mix(
       tint1(iBaseColor),
       tint2(iBaseColor),
