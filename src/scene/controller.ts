@@ -213,6 +213,8 @@ export function createScene(host: HTMLElement): SceneController {
       const { artwork, spans } = artworkFromElement(pre);
       const gpu = createGpuPlanetRenderer(planetCanvas, artwork);
       if (gpu) {
+        // Keep the transparent canvas compositable while its first frame loads.
+        host.dataset.planetRenderer = "gpu";
         renderPlanet = gpu.render;
         resizePlanet = gpu.resize;
         destroyPlanet = gpu.destroy;
@@ -224,7 +226,6 @@ export function createScene(host: HTMLElement): SceneController {
             gpu.destroy();
             return;
           }
-          host.dataset.planetRenderer = "gpu";
           host.dataset.ready = "true";
           preserveRenderedFrameInSource = true;
           presentation.markRendererReady();
@@ -234,6 +235,7 @@ export function createScene(host: HTMLElement): SceneController {
         renderPlanet = undefined;
         resizePlanet = undefined;
         destroyPlanet = undefined;
+        delete host.dataset.planetRenderer;
       }
 
       const [{ createGeometry }, { createTextRenderer }] = await Promise.all([
@@ -255,6 +257,7 @@ export function createScene(host: HTMLElement): SceneController {
       presentation.markRendererReady();
     } catch (error) {
       if (cancellation.signal.aborted) return;
+      delete host.dataset.planetRenderer;
       host.dataset.ready = "failed";
       clock.setMode("paused");
       host.dispatchEvent(new CustomEvent("scene:error", { bubbles: true }));
