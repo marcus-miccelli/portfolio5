@@ -614,9 +614,7 @@ const schedule = () => {
     renderer.draw(latestSeconds);
     if (!reportedReady) {
       reportedReady = true;
-      const reportReady = () => scope.postMessage({ type: "ready" });
-      if (scope.requestAnimationFrame) scope.requestAnimationFrame(reportReady);
-      else setTimeout(reportReady, 0);
+      scope.postMessage({ type: "ready" });
     }
   };
   frameRequest = scope.requestAnimationFrame
