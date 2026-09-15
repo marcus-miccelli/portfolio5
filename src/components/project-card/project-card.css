@@ -120,8 +120,8 @@
 }
 
 .project-card__drag-handle::before {
-  width: 13px;
-  height: 8px;
+  width: 15px;
+  height: 10px;
   background: radial-gradient(circle, currentColor 1px, transparent 1.25px) 0 0 /
     5px 5px;
   content: "";
