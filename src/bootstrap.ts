@@ -12,7 +12,6 @@ import { attachSocialIsland } from "./components/social/social-island";
 import { attachPanelPreloads } from "./components/shell/panel-preloads";
 import { attachPortfolioShell } from "./components/shell/shell";
 import { attachProjectFilters } from "./components/project-card/project-filters";
-import { attachProjectGrid } from "./components/project-card/project-grid";
 
 function mountPage(): () => void {
   const disposers: (() => void)[] = [];
@@ -34,7 +33,6 @@ function mountPage(): () => void {
   const projectFilters = document.querySelector<HTMLElement>(
     "[data-project-filters]",
   );
-  const projectGrid = document.querySelector<HTMLElement>(".project-list");
   const aboutSlideshow = document.querySelector<HTMLElement>(
     "[data-about-slideshow]",
   );
@@ -51,7 +49,6 @@ function mountPage(): () => void {
     if (shell && scene) disposers.push(attachPanelPreloads(shell, scene));
     if (socialIsland) disposers.push(attachSocialIsland(socialIsland));
     if (projectFilters) disposers.push(attachProjectFilters(projectFilters));
-    if (projectGrid) disposers.push(attachProjectGrid(projectGrid));
     if (aboutSlideshow)
       disposers.push(attachAboutSlideshow(aboutSlideshow));
     if (scene && controls) disposers.push(attachControls(controls, scene));

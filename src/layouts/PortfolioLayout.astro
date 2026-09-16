@@ -30,7 +30,7 @@ const socialImage =
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0a0a0f" />
+    <meta name="theme-color" content="#000000" />
     <meta name="description" content={description} />
     <title>{title}</title>
     {canonical && <link rel="canonical" href={canonical} />}
@@ -77,6 +77,13 @@ const socialImage =
     data-composition={composition}
     data-view={composition === "landing" ? "menu" : undefined}
   >
+    <noscript>
+      <style is:global>
+        [data-copy-email] {
+          display: none !important;
+        }
+      </style>
+    </noscript>
     <a class="skip-link" href="#content">Skip to content</a>
     <Scene />
     <div class="site-identity">

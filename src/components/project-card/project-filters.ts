@@ -52,5 +52,10 @@ export function attachProjectFilters(root: HTMLElement): () => void {
     { signal: events.signal },
   );
   update();
-  return () => events.abort();
+  return () => {
+    events.abort();
+    selectedTags.clear();
+    update();
+    if (status) status.textContent = "";
+  };
 }

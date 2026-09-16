@@ -53,7 +53,7 @@ const aboutSlides: AboutSlide[] = [
   },
   {
     src: "/about/slides/img20260916_12255211.jpg",
-    alt: "Arts and crafts at kindergarden.",
+    alt: "Arts and crafts at kindergarten.",
     width: 1576,
     height: 2328,
   },
@@ -82,7 +82,8 @@ const aboutSlides: AboutSlide[] = [
         }
         .primary-nav,
         .menu-notch,
-        .scene-controls {
+        .scene-controls,
+        .project-filters {
           display: none !important;
         }
       </style>
@@ -92,8 +93,10 @@ const aboutSlides: AboutSlide[] = [
       class="portfolio-panel portfolio-panel--about"
       data-panel="about"
       data-preload
+      aria-label="About me"
       hidden
     >
+      <h2 class="sr-only">About me</h2>
       <article class="about-story">
         <p
           class="about-story__intro"
@@ -130,6 +133,7 @@ const aboutSlides: AboutSlide[] = [
       tabindex="-1"
       hidden
     >
+      <h2 class="sr-only">Projects</h2>
       <div class="project-layout" data-project-filters>
         <ul class="project-list">
           {projects.map((project) => <ProjectCard project={project} />)}
@@ -161,14 +165,6 @@ const aboutSlides: AboutSlide[] = [
             >
               reset filter
             </button>
-            <button
-              class="project-filter-reset"
-              type="button"
-              data-project-order-reset
-              hidden
-            >
-              reset order
-            </button>
           </div>
         </aside>
         <p class="sr-only" data-project-filter-status aria-live="polite"></p>
@@ -181,9 +177,16 @@ const aboutSlides: AboutSlide[] = [
         images.length === 0 && "portfolio-panel--gallery-construction",
       ]}
       data-panel="gallery"
+      aria-label="Gallery"
       hidden
     >
-      {images.length > 0 && <h1 data-panel-focus tabindex="-1">Gallery</h1>}
+      <h2
+        class:list={[images.length === 0 && "sr-only"]}
+        data-panel-focus={images.length > 0 ? "" : undefined}
+        tabindex={images.length > 0 ? -1 : undefined}
+      >
+        Gallery
+      </h2>
       {
         images.length === 0 ? (
           <div class="gallery-construction" data-panel-focus tabindex="-1">
