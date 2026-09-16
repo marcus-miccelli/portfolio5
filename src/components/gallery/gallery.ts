@@ -2,9 +2,23 @@ export function attachGallery(root: HTMLElement): () => void {
   const dialog = root.querySelector<HTMLDialogElement>("dialog");
   if (!dialog || typeof dialog.showModal !== "function") return () => {};
   const links = [...root.querySelectorAll<HTMLAnchorElement>("[data-image]")];
-  const image = dialog.querySelector<HTMLImageElement>("[data-full-image]")!;
-  const caption = dialog.querySelector<HTMLElement>("[data-caption]")!;
-  const counter = dialog.querySelector<HTMLElement>("[data-count]")!;
+  const image = dialog.querySelector<HTMLImageElement>("[data-full-image]");
+  const caption = dialog.querySelector<HTMLElement>("[data-caption]");
+  const counter = dialog.querySelector<HTMLElement>("[data-count]");
+  const close = dialog.querySelector<HTMLButtonElement>("[data-close]");
+  const previous =
+    dialog.querySelector<HTMLButtonElement>("[data-previous]");
+  const next = dialog.querySelector<HTMLButtonElement>("[data-next]");
+  if (
+    links.length === 0 ||
+    !image ||
+    !caption ||
+    !counter ||
+    !close ||
+    !previous ||
+    !next
+  )
+    return () => {};
   const cancellation = new AbortController(),
     options = { signal: cancellation.signal };
   let selected = 0;
@@ -35,15 +49,9 @@ export function attachGallery(root: HTMLElement): () => void {
       options,
     ),
   );
-  dialog
-    .querySelector("[data-close]")!
-    .addEventListener("click", () => dialog.close(), options);
-  dialog
-    .querySelector("[data-previous]")!
-    .addEventListener("click", () => show(selected - 1), options);
-  dialog
-    .querySelector("[data-next]")!
-    .addEventListener("click", () => show(selected + 1), options);
+  close.addEventListener("click", () => dialog.close(), options);
+  previous.addEventListener("click", () => show(selected - 1), options);
+  next.addEventListener("click", () => show(selected + 1), options);
   dialog.addEventListener(
     "keydown",
     (event) => {

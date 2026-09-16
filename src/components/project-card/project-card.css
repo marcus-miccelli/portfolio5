@@ -82,7 +82,7 @@
   padding: 16px 16px 10px;
 }
 
-.project-card h2 {
+.project-card h3 {
   margin: 0 auto 0 0;
   font-size: clamp(16px, 1.35vw, 20px);
   line-height: 1.25;

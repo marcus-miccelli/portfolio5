@@ -8,11 +8,29 @@ export function attachSocialIsland(root: HTMLElement): () => void {
   let resetTimer: number | undefined;
   let disposed = false;
   const reset = () => {
+    resetTimer = undefined;
     label.textContent = "copy email";
     status.textContent = "";
   };
+  const unavailable = () => {
+    if (disposed) return;
+    label.textContent = "unavailable";
+    status.textContent = "Email address is unavailable";
+    if (resetTimer) window.clearTimeout(resetTimer);
+    resetTimer = window.setTimeout(reset, 1800);
+  };
   const copy = async () => {
-    const email = atob(button.dataset.email ?? "");
+    let email: string;
+    try {
+      email = atob(button.dataset.email ?? "");
+    } catch {
+      unavailable();
+      return;
+    }
+    if (!email) {
+      unavailable();
+      return;
+    }
     let copied = false;
     try {
       await navigator.clipboard.writeText(email);
@@ -46,5 +64,6 @@ export function attachSocialIsland(root: HTMLElement): () => void {
     disposed = true;
     events.abort();
     if (resetTimer) window.clearTimeout(resetTimer);
+    reset();
   };
 }

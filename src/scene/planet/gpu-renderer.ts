@@ -1,3 +1,4 @@
+import { INITIAL_REVEAL_TIMEOUT_MS } from "../config";
 import type { Artwork, Viewport } from "../types";
 import type {
   PlanetComposition,
@@ -28,11 +29,14 @@ export function createGpuPlanetRenderer(
     return null;
   }
   let disposed = false;
+  let readyTimer = 0;
   let settle: ((ready: boolean) => void) | undefined;
   const ready = new Promise<boolean>((resolve) => {
     settle = resolve;
   });
   const finish = (value: boolean) => {
+    clearTimeout(readyTimer);
+    readyTimer = 0;
     settle?.(value);
     settle = undefined;
   };
@@ -55,6 +59,10 @@ export function createGpuPlanetRenderer(
       artwork,
     };
     worker.postMessage(message, [offscreen]);
+    readyTimer = window.setTimeout(
+      () => finish(false),
+      INITIAL_REVEAL_TIMEOUT_MS,
+    );
   } catch {
     worker.terminate();
     return null;

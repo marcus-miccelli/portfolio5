@@ -8,7 +8,16 @@ export function createTextRenderer(
 ) {
   if (spans.length !== cells.length)
     throw new Error("Artwork markup and data disagree");
-  const text = spans.map((span) => span.firstChild as Text);
+  const text = spans.map((span, index) => {
+    const node = span.firstChild;
+    if (
+      !(node instanceof Text) ||
+      span.childNodes.length !== 1 ||
+      node.data !== cells[index].char
+    )
+      throw new Error(`Invalid artwork text node ${index}`);
+    return node;
+  });
   const current = Int32Array.from(cells, (cell) => cell.index);
   const variants = Array.from(
     { length: 100 },

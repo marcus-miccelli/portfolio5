@@ -239,7 +239,6 @@ export function createScene(host: HTMLElement): SceneController {
       const [{ createGeometry }, { createTextRenderer }] = await Promise.all([
         import("./planet/geometry"),
         import("./planet/text-renderer"),
-        document.fonts.load('32px "Recovered Planet"'),
       ]);
       if (cancellation.signal.aborted) return;
       const geometry = createGeometry(artwork);

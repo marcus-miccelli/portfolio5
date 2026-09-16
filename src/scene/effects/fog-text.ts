@@ -34,6 +34,14 @@ export function attachFogText(
     disposed = false,
     presentationRevealed = false,
     presentationMoving = false;
+  const pendingUrls = new Set<string>();
+  const revokePendingUrl = (url: string) => {
+    if (pendingUrls.delete(url)) URL.revokeObjectURL(url);
+  };
+  const clearPendingUrls = () => {
+    pendingUrls.forEach((url) => URL.revokeObjectURL(url));
+    pendingUrls.clear();
+  };
   const clearTexture = () => {
     field = undefined;
     if (textureUrl) URL.revokeObjectURL(textureUrl);
@@ -102,6 +110,7 @@ export function attachFogText(
       )
         return;
       nextUrl = URL.createObjectURL(next.blob);
+      pendingUrls.add(nextUrl);
       const image = new Image();
       image.src = nextUrl;
       await image.decode();
@@ -110,9 +119,10 @@ export function attachFogText(
         version !== textureVersion ||
         mobileEffects.matches
       ) {
-        URL.revokeObjectURL(nextUrl);
+        revokePendingUrl(nextUrl);
         return;
       }
+      pendingUrls.delete(nextUrl);
       if (textureUrl) URL.revokeObjectURL(textureUrl);
       textureUrl = nextUrl;
       nextUrl = undefined;
@@ -127,7 +137,7 @@ export function attachFogText(
       scene.markEffectsSettled();
       reveal();
     } catch (error) {
-      if (nextUrl) URL.revokeObjectURL(nextUrl);
+      if (nextUrl) revokePendingUrl(nextUrl);
       if (disposed || version !== textureVersion) return;
       console.warn("Navigation fog unavailable", error);
       scene.markEffectsSettled();
@@ -158,6 +168,7 @@ export function attachFogText(
   const unsubscribeFog = scene.subscribeFog(
     (next) => {
       const version = ++textureVersion;
+      clearPendingUrls();
       void renderTexture(next, version);
     },
     preset.raster,
@@ -188,6 +199,7 @@ export function attachFogText(
         textureVersion++;
         cancelAnimationFrame(revealFrame);
         revealFrame = 0;
+        clearPendingUrls();
         clearTexture();
         delete nav.dataset.fogVisible;
       }
@@ -209,6 +221,7 @@ export function attachFogText(
     delete nav.dataset.fogVisible;
     nav.style.removeProperty("--fog-text-blend");
     nav.style.removeProperty("--fog-text-opacity");
+    clearPendingUrls();
     clearTexture();
     nav.style.removeProperty("--fog-x");
     nav.style.removeProperty("--fog-y");

@@ -5,6 +5,10 @@ import { projectLinkKinds } from "./content/project-links";
 const localAsset = z
   .string()
   .regex(/^\/(?!\/)/, "Use a local public asset path beginning with /");
+const externalLink = z
+  .string()
+  .url()
+  .regex(/^https?:\/\//i, "Use an http or https URL");
 
 const projects = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/projects" }),
@@ -20,7 +24,7 @@ const projects = defineCollection({
         z.object({
           type: z.literal("image"),
           src: localAsset,
-          alt: z.string().default(""),
+          alt: z.string().min(1),
         }),
         z.object({
           type: z.literal("video"),
@@ -34,7 +38,7 @@ const projects = defineCollection({
       .array(
         z.object({
           label: z.string(),
-          href: z.string().url(),
+          href: externalLink,
           kind: z.enum(projectLinkKinds).optional(),
         }),
       )

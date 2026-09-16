@@ -1,3 +1,5 @@
+import { INITIAL_REVEAL_TIMEOUT_MS } from "./config";
+
 interface PresentationRevealOptions {
   host: HTMLElement;
   effectsSettled: boolean;
@@ -27,7 +29,22 @@ export function createPresentationReveal({
   let effectsSettled = initiallySettled;
   let revealFrame = 0;
   let motionTimer = 0;
+  let effectsTimer = 0;
+  let motionStarted = false;
   let destroyed = false;
+
+  const beginMotion = () => {
+    if (destroyed || motionStarted) return;
+    motionStarted = true;
+    clearTimeout(motionTimer);
+    motionTimer = 0;
+    startMotion();
+  };
+
+  const onReducedMotionChange = (event: MediaQueryListEvent) => {
+    if (event.matches && motionTimer) beginMotion();
+  };
+  reducedMotion.addEventListener("change", onReducedMotionChange);
 
   const reveal = () => {
     if (
@@ -43,14 +60,21 @@ export function createPresentationReveal({
         revealFrame = 0;
         if (destroyed) return;
         host.dataset.planetVisible = "true";
-        motionTimer = window.setTimeout(() => {
-          motionTimer = 0;
-          if (!destroyed) startMotion();
-        }, sceneTransitionDuration(reducedMotion));
+        motionTimer = window.setTimeout(
+          beginMotion,
+          sceneTransitionDuration(reducedMotion),
+        );
         startReveal();
       });
     });
   };
+
+  if (!effectsSettled)
+    effectsTimer = window.setTimeout(() => {
+      effectsTimer = 0;
+      effectsSettled = true;
+      reveal();
+    }, INITIAL_REVEAL_TIMEOUT_MS);
 
   return {
     markRendererReady() {
@@ -59,12 +83,16 @@ export function createPresentationReveal({
     },
     markEffectsSettled() {
       effectsSettled = true;
+      clearTimeout(effectsTimer);
+      effectsTimer = 0;
       reveal();
     },
     destroy() {
       destroyed = true;
       cancelAnimationFrame(revealFrame);
       clearTimeout(motionTimer);
+      clearTimeout(effectsTimer);
+      reducedMotion.removeEventListener("change", onReducedMotionChange);
       delete host.dataset.planetVisible;
     },
   };

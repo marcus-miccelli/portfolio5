@@ -3,10 +3,13 @@ export function attachControls(
   root: HTMLElement,
   scene: SceneController,
 ): () => void {
-  const motion = root.querySelector<HTMLButtonElement>("[data-motion]")!;
-  const source = root.querySelector<HTMLButtonElement>("[data-source]")!;
+  const motion = root.querySelector<HTMLButtonElement>("[data-motion]");
+  const source = root.querySelector<HTMLButtonElement>("[data-source]");
+  if (!motion || !source) return () => {};
   const events = new AbortController();
   let displayed: SceneMode | undefined;
+  motion.disabled = false;
+  source.disabled = false;
   root.hidden = false;
   const unsubscribe = scene.subscribeFrame(({ mode }) => {
     if (displayed === mode) return;
@@ -30,5 +33,6 @@ export function attachControls(
   return () => {
     events.abort();
     unsubscribe();
+    root.hidden = true;
   };
 }

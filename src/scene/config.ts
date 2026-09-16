@@ -37,6 +37,8 @@ export const MOTION = {
   hueSeconds: 120,
   twinkleSeconds: 20,
 } as const;
+/** Never let optional startup work hold the real-text reveal indefinitely. */
+export const INITIAL_REVEAL_TIMEOUT_MS = 15000;
 export const TAU = Math.PI * 2;
 export const clamp = (value: number, min = 0, max = 1) =>
   Math.max(min, Math.min(max, value));

@@ -17,7 +17,7 @@ type DragState = {
 
 const isInteractive = (target: EventTarget | null): boolean =>
   target instanceof Element &&
-  Boolean(target.closest("a, button, input, select, textarea"));
+  Boolean(target.closest("a, button, input, select, textarea, video"));
 
 export function attachProjectGrid(grid: HTMLElement): () => void {
   const media = matchMedia("(min-width: 681px) and (pointer: fine)");
@@ -38,6 +38,8 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
   let frame = 0;
   let layoutFrame = 0;
   let enabled = false;
+  // Reordering in a pointer frame must reuse the last measured width.
+  let gridWidth = 0;
   let layoutGap = 20;
   let layoutColumns = 2;
 
@@ -64,7 +66,11 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
   const restoreSavedOrder = (): void => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (!Array.isArray(saved) || !saved.every((id) => typeof id === "string"))
+      if (
+        !Array.isArray(saved) ||
+        !saved.every((id) => typeof id === "string") ||
+        new Set(saved).size !== saved.length
+      )
         return;
       const savedRanks = new Map(
         saved.map((id: string, index: number) => [id, index]),
@@ -105,7 +111,7 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
       if (Number.isFinite(nextColumns) && nextColumns > 0)
         layoutColumns = nextColumns;
     }
-    const gridWidth = grid.clientWidth;
+    if (measure) gridWidth = grid.clientWidth;
     if (gridWidth <= layoutGap) return;
     const width =
       (gridWidth - layoutGap * (layoutColumns - 1)) / layoutColumns;
@@ -173,18 +179,19 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
       const position = positions.get(tile);
       const size = sizes.get(tile);
       if (!position || !size) continue;
+      if (
+        draggedCenter.x < position.x ||
+        draggedCenter.x > position.x + size.width ||
+        draggedCenter.y < position.y ||
+        draggedCenter.y > position.y + size.height
+      )
+        continue;
       const dx = draggedCenter.x - (position.x + size.width / 2);
       const dy = draggedCenter.y - (position.y + size.height / 2);
       const distance = dx * dx + dy * dy;
       if (distance >= targetDistance) continue;
       targetDistance = distance;
-      targetTile =
-        draggedCenter.x >= position.x &&
-        draggedCenter.x <= position.x + size.width &&
-        draggedCenter.y >= position.y &&
-        draggedCenter.y <= position.y + size.height
-          ? tile
-          : null;
+      targetTile = tile;
     }
 
     if (!targetTile) return;
@@ -272,6 +279,7 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
     if (drag?.tile.hasPointerCapture(drag.pointerId))
       drag.tile.releasePointerCapture(drag.pointerId);
     drag = null;
+    gridWidth = 0;
     positions.clear();
     sizes.clear();
     grid.classList.remove("is-project-grid", "is-project-grid-animating");
@@ -317,6 +325,12 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
   });
   window.addEventListener("pointerup", finishDrag, { signal: events.signal });
   window.addEventListener("pointercancel", finishDrag, { signal: events.signal });
+  // A hidden panel has zero width until the shell reveals it.
+  document.addEventListener(
+    "portfolio:viewchange",
+    () => applyLayout(false),
+    { signal: events.signal },
+  );
   media.addEventListener("change", syncMode, { signal: events.signal });
   resizeObserver.observe(grid);
   mutationObserver.observe(grid, {
@@ -334,5 +348,11 @@ export function attachProjectGrid(grid: HTMLElement): () => void {
     resizeObserver.disconnect();
     mutationObserver.disconnect();
     disable();
+    tiles.sort(
+      (a, b) =>
+        (authoredRanks.get(tileId(a)) ?? 0) -
+        (authoredRanks.get(tileId(b)) ?? 0),
+    );
+    for (const tile of tiles) grid.append(tile);
   };
 }
