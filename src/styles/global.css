@@ -21,7 +21,7 @@ body::-webkit-scrollbar {
 body {
   margin: 0;
   min-height: 100svh;
-  font: 500 14px/1.8 var(--font);
+  font: 500 clamp(16px, 1.35vw, 20px) / 1.8 var(--font);
 }
 body[data-composition="landing"] {
   height: 100svh;
@@ -79,7 +79,7 @@ h2 {
   margin-top: 3rem;
 }
 p {
-  max-width: 62ch;
+  max-width: 70ch;
 }
 .sr-only {
   position: absolute;
@@ -136,7 +136,7 @@ body[data-composition="landing"] .portfolio-panel:not([hidden]) {
   padding: 5px 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #0a0a0fcc;
+  background: var(--scene-surface);
   color: var(--muted);
   font-size: 16px;
   line-height: 1;
@@ -144,14 +144,13 @@ body[data-composition="landing"] .portfolio-panel:not([hidden]) {
   transition:
     color var(--motion-fast),
     border-color var(--motion-fast),
-    background var(--motion-fast),
-    opacity var(--motion-fast);
+    background var(--motion-fast);
 }
 .panel-back:hover,
 .panel-back:focus-visible {
   color: var(--text);
-  border-color: #ffffff42;
-  background: #11131ae6;
+  border-color: var(--line-strong);
+  background: var(--scene-surface-hover);
 }
 .page-content {
   position: relative;
@@ -168,18 +167,16 @@ body[data-composition="landing"] .portfolio-panel:not([hidden]) {
     border: 0;
     border-right: 1px solid var(--line);
     border-radius: 0;
-    background: #0a0a0f80;
-    opacity: 0.7;
+    background: var(--scene-surface);
   }
   .panel-back > span {
     letter-spacing: -0.14em;
     animation: panel-back-nudge 9s ease-in-out 2s infinite;
-    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform var(--motion-fast) var(--view-transition-easing);
   }
   .panel-back:hover,
   .panel-back:focus-visible {
-    border-color: #ffffff42;
-    opacity: 1;
+    border-color: var(--line-strong);
   }
   .panel-back:hover > span,
   .panel-back:focus-visible > span {
@@ -209,21 +206,21 @@ body[data-composition="landing"] .portfolio-panel:not([hidden]) {
 .lede {
   font-size: clamp(17px, 2vw, 21px);
   line-height: 1.7;
-  color: #c2c6d0;
+  color: var(--muted-strong);
 }
 .site-identity {
   position: fixed;
   top: var(--site-identity-top);
-  right: max(var(--gutter), env(safe-area-inset-right));
+  right: var(--safe-gutter-right);
   z-index: 3;
   width: var(--site-identity-width);
-  color: #82afe3;
+  color: var(--scene-accent);
   filter: hue-rotate(var(--scene-hue, 0deg));
   will-change: filter;
 }
 html[data-scene-hue-transition="true"] .site-identity,
 html[data-scene-hue-transition="true"] .site-name {
-  transition: filter var(--scene-reveal-duration) linear;
+  transition: filter var(--scene-reveal-duration) var(--scene-reveal-easing);
 }
 .site-name {
   margin: 0;
@@ -231,21 +228,6 @@ html[data-scene-hue-transition="true"] .site-name {
   font-size: var(--site-name-font-size);
   line-height: var(--site-name-line-height);
   white-space: nowrap;
-}
-.muted {
-  color: var(--muted);
-}
-.inline-links {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  margin-top: 36px;
-}
-.empty-state {
-  padding-top: 32px;
-  border-top: 1px solid var(--line);
-  margin-top: 48px;
-  color: var(--muted);
 }
 .scene-controls {
   position: fixed;
@@ -283,7 +265,7 @@ html[data-scene-hue-transition="true"] .site-name {
   padding: 6px 12px;
   border: 1px solid #ffffff2b;
   border-radius: 999px;
-  background: #0a0a0fe0;
+  background: var(--scene-surface);
   color: #9ba1ad;
   font-family: var(--font);
   font-size: 9px;
@@ -309,8 +291,8 @@ html[data-scene-hue-transition="true"] .site-name {
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity 160ms ease,
-    visibility 0s linear 160ms;
+    opacity var(--motion-fast) ease,
+    visibility 0s linear var(--motion-fast);
 }
 @media (max-width: 600px) {
   .panel-back {
@@ -319,7 +301,7 @@ html[data-scene-hue-transition="true"] .site-name {
   .site-name {
     position: fixed;
     top: 62px;
-    right: max(var(--gutter), env(safe-area-inset-right));
+    right: var(--safe-gutter-right);
     z-index: 3;
     filter: hue-rotate(var(--scene-hue, 0deg));
     will-change: filter;
@@ -334,7 +316,7 @@ html[data-scene-hue-transition="true"] .site-name {
   }
   .scene-controls {
     padding: 0 8px;
-    background: #0a0a0fe6;
+    background: var(--tooltip-surface);
     border-radius: 3px;
     opacity: 0.75;
   }

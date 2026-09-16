@@ -15,14 +15,14 @@
 }
 .social-island:hover,
 .social-island:focus-within {
-  border-color: #ffffff42;
+  border-color: var(--line-strong);
   opacity: 1;
 }
 html[data-scene-hue-transition="true"] .social-island {
   transition:
     opacity var(--motion-fast),
     border-color var(--motion-fast),
-    filter var(--scene-reveal-duration) linear;
+    filter var(--scene-reveal-duration) var(--scene-reveal-easing);
 }
 .social-island__action {
   position: relative;
@@ -39,8 +39,8 @@ html[data-scene-hue-transition="true"] .social-island {
   opacity: 0.68;
   text-decoration: none;
   transition:
-    opacity 130ms ease,
-    background 130ms ease;
+    opacity var(--motion-instant) ease,
+    background var(--motion-instant) ease;
 }
 .social-island__action:first-child {
   border-radius: 1px 0 0 11px;
@@ -60,7 +60,7 @@ html[data-scene-hue-transition="true"] .social-island {
   width: 16px;
   height: 16px;
   transform: translate(var(--icon-offset-x), var(--icon-offset-y));
-  transition: transform 130ms ease;
+  transition: transform var(--motion-instant) ease;
 }
 .social-island__action svg {
   display: block;
@@ -101,8 +101,8 @@ html[data-scene-hue-transition="true"] .social-island {
   padding: 3px 6px;
   border: 1px solid var(--line);
   border-radius: 3px;
-  background: #0a0a0feb;
-  color: #c5c9d2;
+  background: var(--tooltip-surface);
+  color: var(--tooltip-text);
   font-size: 9px;
   line-height: 1.4;
   letter-spacing: 0.06em;
@@ -111,8 +111,8 @@ html[data-scene-hue-transition="true"] .social-island {
   pointer-events: none;
   transform: translate(-50%, -3px);
   transition:
-    opacity 120ms ease,
-    transform 120ms ease;
+    opacity var(--motion-instant) ease,
+    transform var(--motion-instant) ease;
 }
 .social-island__action:hover > .social-island__label,
 .social-island__action:focus-visible > .social-island__label {

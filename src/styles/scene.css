@@ -13,11 +13,9 @@ orbit-scene {
   transition: opacity var(--view-transition-duration)
     var(--view-transition-easing);
 }
-[data-composition="content"] orbit-scene {
-  opacity: 0.13;
-}
+
 [data-view]:not([data-view="menu"]) orbit-scene {
-  opacity: 0.13;
+  opacity: 0.1;
 }
 .universe {
   position: absolute;
@@ -26,7 +24,7 @@ orbit-scene {
   overflow: hidden;
 }
 orbit-scene[data-hue-transition="true"] .universe {
-  transition: filter var(--scene-reveal-duration) linear;
+  transition: filter var(--scene-reveal-duration) var(--scene-reveal-easing);
 }
 .planet {
   position: absolute;
@@ -94,9 +92,7 @@ orbit-scene[data-planet-renderer="gpu"][data-mode="source"] .planet-render {
   opacity: 0;
   visibility: hidden;
 }
-[data-composition="content"] .planet {
-  pointer-events: none;
-}
+[data-composition="content"] .planet,
 [data-view]:not([data-view="menu"]) .planet {
   pointer-events: none;
 }

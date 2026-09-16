@@ -1,4 +1,4 @@
-.portfolio-panel.portfolio-panel--gallery-construction {
+.portfolio-panel--gallery-construction {
   display: grid;
   width: 100%;
   min-height: 100svh;
@@ -18,7 +18,6 @@
 }
 .gallery-construction p {
   margin: 0;
-  color: var(--muted);
 }
 .gallery-construction img {
   display: block;
@@ -51,11 +50,11 @@
   margin: 0;
   border: 0;
   padding: 24px;
-  background: #0a0a0ff5;
+  background: var(--overlay-surface);
   color: var(--text);
 }
 .lightbox::backdrop {
-  background: #0a0a0fe8;
+  background: var(--overlay-backdrop);
 }
 .lightbox[open] {
   display: flex;

@@ -1,4 +1,4 @@
-.portfolio-panel.portfolio-panel--about {
+.portfolio-panel--about {
   width: min(100%, calc(74rem + var(--gutter) * 2));
   padding-bottom: clamp(120px, 16vh, 190px);
 }
@@ -10,11 +10,7 @@
 
 .about-story__intro,
 .about-story__copy p {
-  max-width: 70ch;
   margin: 0;
-  color: #c6cad3;
-  font-size: clamp(16px, 1.35vw, 20px);
-  line-height: 1.85;
 }
 
 .about-story__intro:focus {
@@ -36,7 +32,7 @@
   overflow: hidden;
   aspect-ratio: 3 / 4;
   border: 1px solid var(--line);
-  background: #0a0a0f;
+  background: var(--scene-surface);
 }
 
 .about-slideshow__image {
@@ -64,16 +60,16 @@
 }
 
 .about-story strong {
-  color: hsl(calc(212deg + var(--scene-hue, 0deg)) 65% 70%);
+  color: hsl(var(--scene-color-hue) 65% 70%);
   font-weight: inherit;
 }
 
 html[data-scene-hue-transition="true"] .about-story strong {
-  transition: color var(--scene-reveal-duration) linear;
+  transition: color var(--scene-reveal-duration) var(--scene-reveal-easing);
 }
 
 @media (min-width: 1280px) {
-  .portfolio-panel.portfolio-panel--about {
+  .portfolio-panel--about {
     --about-slideshow-width: min(
       42vw,
       640px,
@@ -81,23 +77,22 @@ html[data-scene-hue-transition="true"] .about-story strong {
     );
     width: 100%;
     margin: 0;
+    padding-top: calc(var(--side-content-top) - 0.5em);
     padding-right: calc(
       var(--about-slideshow-width) + var(--gutter) + clamp(40px, 4vw, 68px)
     );
   }
 
   .about-story {
-    font-size: clamp(16px, 1.35vw, 20px);
     grid-template-columns: minmax(0, 70ch);
   }
 
   .about-slideshow {
     position: fixed;
-    top: calc(var(--social-island-top) + 62px);
-    right: max(var(--gutter), env(safe-area-inset-right));
+    top: var(--side-content-top);
+    right: var(--safe-gutter-right);
     z-index: 1;
     display: block;
     width: var(--about-slideshow-width);
-    max-width: none;
   }
 }
