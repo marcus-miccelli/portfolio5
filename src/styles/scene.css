@@ -14,7 +14,8 @@ orbit-scene {
     var(--view-transition-easing);
 }
 
-[data-view]:not([data-view="menu"]) orbit-scene {
+[data-view]:not([data-view="menu"]) orbit-scene,
+[data-composition="content"] orbit-scene {
   opacity: 0.1;
 }
 .universe {

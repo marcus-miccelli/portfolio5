@@ -18,32 +18,14 @@ const images = (await getCollection("gallery")).sort(
 const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort(
   (a, b) => a.localeCompare(b),
 );
-const normalizedAboutCopy = aboutCopy.trim().replaceAll("\r\n", "\n");
-const [aboutIntroduction = "", ...aboutParagraphs] =
-  normalizedAboutCopy.split("\n\n");
-const aboutEmphasis = new Set([
-  "facilitate changing my life",
-  "math-minded from a young age",
-  "This breadth was intentional",
-  "a proper education",
-  "over 1000 beats",
-  "the theory and the PowerShell scripting",
-  "I wanted to do something hard",
-  "a test of who I really was",
-  "technical pursuit and creative expression",
-]);
-const emphasisPattern = new RegExp(
-  `(${[...aboutEmphasis]
-    .sort((a, b) => b.length - a.length)
-    .map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|")})`,
-  "g",
-);
-const styledAboutCopy = (copy: string) =>
-  copy.split(emphasisPattern).map((text) => ({
-    text,
-    emphasized: aboutEmphasis.has(text),
-  }));
+const [aboutIntroduction = "", ...aboutBlocks] = aboutCopy
+  .trim()
+  .replaceAll("\r\n", "\n")
+  .split("\n\n");
+const aboutSections = aboutBlocks.map((block) => {
+  const [heading, ...body] = block.split("\n");
+  return { heading, body: body.join(" ") };
+});
 const aboutSlides: AboutSlide[] = [
   {
     src: "/about/slides/img20260916_12255210.jpg",
@@ -103,23 +85,16 @@ const aboutSlides: AboutSlide[] = [
           data-panel-focus
           tabindex="-1"
         >
-          {
-            styledAboutCopy(aboutIntroduction).map(({ text, emphasized }) =>
-              emphasized ? <strong>{text}</strong> : text,
-            )
-          }
+          {aboutIntroduction}
         </p>
-        <div class="about-story__copy">
-          {
-            aboutParagraphs.map((paragraph) => (
-              <p>
-                {styledAboutCopy(paragraph).map(({ text, emphasized }) =>
-                  emphasized ? <strong>{text}</strong> : text,
-                )}
-              </p>
-            ))
-          }
-        </div>
+        {
+          aboutSections.map(({ heading, body }) => (
+            <section class="about-story__section">
+              <h3>{heading}</h3>
+              <p>{body}</p>
+            </section>
+          ))
+        }
         <AboutSlideshow slides={aboutSlides} />
       </article>
     </section>

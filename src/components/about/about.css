@@ -5,11 +5,11 @@
 
 .about-story {
   display: grid;
-  gap: clamp(44px, 6vw, 72px);
+  gap: clamp(30px, 4vw, 48px);
 }
 
 .about-story__intro,
-.about-story__copy p {
+.about-story__section p {
   margin: 0;
 }
 
@@ -17,9 +17,12 @@
   outline: none;
 }
 
-.about-story__copy {
-  display: grid;
-  gap: 1.7em;
+.about-story__section h3 {
+  margin-bottom: 0.6em;
+  font-size: 1em;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: hsl(var(--scene-color-hue) 65% 70%);
 }
 
 .about-slideshow {
@@ -59,12 +62,7 @@
   line-height: 1.8;
 }
 
-.about-story strong {
-  color: hsl(var(--scene-color-hue) 65% 70%);
-  font-weight: inherit;
-}
-
-html[data-scene-hue-transition="true"] .about-story strong {
+html[data-scene-hue-transition="true"] .about-story__section h3 {
   transition: color var(--scene-reveal-duration) var(--scene-reveal-easing);
 }
 
@@ -85,6 +83,10 @@ html[data-scene-hue-transition="true"] .about-story strong {
 
   .about-story {
     grid-template-columns: minmax(0, 70ch);
+    /* Match the 3:4 image, the top offset, and the last line's font leading. */
+    min-height: calc(var(--about-slideshow-width) * 4 / 3 + 0.75em);
+    align-content: space-between;
+    gap: clamp(18px, 2vw, 32px);
   }
 
   .about-slideshow {

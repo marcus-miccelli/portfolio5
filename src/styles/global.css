@@ -120,7 +120,8 @@ p {
   margin: 0 auto;
   padding: clamp(150px, 19vh, 210px) var(--gutter) 160px;
 }
-body[data-composition="landing"] .portfolio-panel:not([hidden]) {
+body[data-composition="landing"] .portfolio-panel:not([hidden]),
+body[data-composition="content"] .page-content {
   animation: portfolio-overlay-enter var(--view-transition-duration)
     var(--view-transition-easing) both;
 }
