@@ -5,6 +5,9 @@ export const ABOUT_SLIDESHOW_MIN_WIDTH = 1280;
 export const MEDIA = {
   aboutSlideshow: `(min-width: ${ABOUT_SLIDESHOW_MIN_WIDTH}px)`,
   mobileEffects: `(max-width: ${MOBILE_EFFECTS_MAX_WIDTH}px)`,
+  panelPreloads:
+    `(min-width: ${MOBILE_EFFECTS_MAX_WIDTH + 1}px) and ` +
+    "(hover: hover) and (pointer: fine)",
   reducedMotion: "(prefers-reduced-motion: reduce)",
 } as const;
 

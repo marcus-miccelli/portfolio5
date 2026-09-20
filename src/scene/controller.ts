@@ -1,7 +1,7 @@
 import { media } from "../media";
 import { artworkFromElement } from "./artwork";
 import { createClock } from "./clock";
-import { MOTION } from "./config";
+import { MAX_SCENE_PIXEL_RATIO, MOTION } from "./config";
 import { compose } from "./layout";
 import { createGpuPlanetRenderer } from "./planet/gpu-renderer";
 import { createFogField } from "./atmosphere/fog-field";
@@ -176,7 +176,10 @@ export function createScene(host: HTMLElement): SceneController {
     resize({
       width: host.clientWidth,
       height: host.clientHeight,
-      pixelRatio: window.devicePixelRatio || 1,
+      pixelRatio: Math.min(
+        window.devicePixelRatio || 1,
+        MAX_SCENE_PIXEL_RATIO,
+      ),
     });
   const observer = new ResizeObserver(measure);
   observer.observe(host);
