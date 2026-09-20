@@ -33,7 +33,7 @@ function mountPage(): () => void {
   const projectFilters = document.querySelector<HTMLElement>(
     "[data-project-filters]",
   );
-  const aboutSlideshow = document.querySelector<HTMLElement>(
+  const aboutSlideshow = document.querySelector<HTMLTemplateElement>(
     "[data-about-slideshow]",
   );
   try {
@@ -46,11 +46,11 @@ function mountPage(): () => void {
     if (homeLink) disposers.push(attachEscapeHome(homeLink));
     if (shell && nav && shellBack)
       disposers.push(attachPortfolioShell(shell, nav, shellBack));
+    if (aboutSlideshow)
+      disposers.push(attachAboutSlideshow(aboutSlideshow));
     if (shell && scene) disposers.push(attachPanelPreloads(shell, scene));
     if (socialIsland) disposers.push(attachSocialIsland(socialIsland));
     if (projectFilters) disposers.push(attachProjectFilters(projectFilters));
-    if (aboutSlideshow)
-      disposers.push(attachAboutSlideshow(aboutSlideshow));
     if (scene && controls) disposers.push(attachControls(controls, scene));
     const gallery = document.querySelector<HTMLElement>("[data-gallery]");
     if (gallery) disposers.push(attachGallery(gallery));

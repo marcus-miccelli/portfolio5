@@ -37,6 +37,7 @@ export const MOTION = {
   hueSeconds: 120,
   twinkleSeconds: 20,
 } as const;
+export const MOBILE_EFFECTS_MAX_WIDTH = 600;
 /** Never let optional startup work hold the real-text reveal indefinitely. */
 export const INITIAL_REVEAL_TIMEOUT_MS = 15000;
 export const TAU = Math.PI * 2;

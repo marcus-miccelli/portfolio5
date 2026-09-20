@@ -1,3 +1,4 @@
+import { media } from "../../media";
 import { fogPosition } from "../atmosphere/motion";
 import { FOG } from "../config";
 import type { FogTexture, SceneController } from "../types";
@@ -8,7 +9,6 @@ export function attachFogText(
   nav: HTMLElement,
   scene: SceneController,
 ): () => void {
-  const mobileEffects = matchMedia("(max-width: 600px)");
   if (
     !(
       CSS.supports("background-clip", "text") ||
@@ -18,6 +18,30 @@ export function attachFogText(
     scene.markEffectsSettled();
     return () => {};
   }
+  let disposeDesktop: (() => void) | undefined;
+  const unsubscribeMobileEffects = media.subscribe(
+    "mobileEffects",
+    (mobile) => {
+      if (mobile) {
+        disposeDesktop?.();
+        disposeDesktop = undefined;
+        scene.markEffectsSettled();
+      } else if (!disposeDesktop) {
+        disposeDesktop = attachDesktopFogText(nav, scene);
+      }
+    },
+  );
+  return () => {
+    unsubscribeMobileEffects();
+    disposeDesktop?.();
+    disposeDesktop = undefined;
+  };
+}
+
+function attachDesktopFogText(
+  nav: HTMLElement,
+  scene: SceneController,
+): () => void {
   const events = new AbortController();
   const preset = activeFogTextPreset;
   nav.style.setProperty("--fog-text-blend", preset.blendMode);
@@ -82,7 +106,6 @@ export function attachFogText(
     if (
       !presentationRevealed ||
       !field ||
-      mobileEffects.matches ||
       nav.dataset.fogVisible === "true"
     )
       return;
@@ -95,30 +118,20 @@ export function attachFogText(
     revealFrame = requestAnimationFrame(() => {
       revealFrame = requestAnimationFrame(() => {
         revealFrame = 0;
-        if (!disposed && !mobileEffects.matches)
-          nav.dataset.fogVisible = "true";
+        if (!disposed) nav.dataset.fogVisible = "true";
       });
     });
   };
   const renderTexture = async (next: FogTexture, version: number) => {
     let nextUrl: string | undefined;
     try {
-      if (
-        disposed ||
-        version !== textureVersion ||
-        mobileEffects.matches
-      )
-        return;
+      if (disposed || version !== textureVersion) return;
       nextUrl = URL.createObjectURL(next.blob);
       pendingUrls.add(nextUrl);
       const image = new Image();
       image.src = nextUrl;
       await image.decode();
-      if (
-        disposed ||
-        version !== textureVersion ||
-        mobileEffects.matches
-      ) {
+      if (disposed || version !== textureVersion) {
         revokePendingUrl(nextUrl);
         return;
       }
@@ -154,7 +167,6 @@ export function attachFogText(
   const syncAnimation = () => {
     const shouldAnimate =
       presentationMoving &&
-      !mobileEffects.matches &&
       mode === "playing" &&
       document.body.dataset.view === "menu";
     if (shouldAnimate) {
@@ -192,21 +204,6 @@ export function attachFogText(
   nav.addEventListener("navigation:motion", refreshAlignment, {
     signal: events.signal,
   });
-  mobileEffects.addEventListener(
-    "change",
-    () => {
-      if (mobileEffects.matches) {
-        textureVersion++;
-        cancelAnimationFrame(revealFrame);
-        revealFrame = 0;
-        clearPendingUrls();
-        clearTexture();
-        delete nav.dataset.fogVisible;
-      }
-      syncAnimation();
-    },
-    { signal: events.signal },
-  );
   syncAnimation();
   const observer = new ResizeObserver(align);
   labels.forEach((label) => observer.observe(label));

@@ -3,13 +3,13 @@ import { INITIAL_REVEAL_TIMEOUT_MS } from "./config";
 interface PresentationRevealOptions {
   host: HTMLElement;
   effectsSettled: boolean;
-  reducedMotion: MediaQueryList;
+  reducedMotion: boolean;
   startReveal(): void;
   startMotion(): void;
 }
 
-export function sceneTransitionDuration(reducedMotion: MediaQueryList): number {
-  if (reducedMotion.matches) return 0;
+export function sceneTransitionDuration(reducedMotion: boolean): number {
+  if (reducedMotion) return 0;
   const value = getComputedStyle(document.documentElement)
     .getPropertyValue("--scene-reveal-duration")
     .trim();
@@ -32,6 +32,7 @@ export function createPresentationReveal({
   let effectsTimer = 0;
   let motionStarted = false;
   let destroyed = false;
+  let prefersReducedMotion = reducedMotion;
 
   const beginMotion = () => {
     if (destroyed || motionStarted) return;
@@ -40,11 +41,6 @@ export function createPresentationReveal({
     motionTimer = 0;
     startMotion();
   };
-
-  const onReducedMotionChange = (event: MediaQueryListEvent) => {
-    if (event.matches && motionTimer) beginMotion();
-  };
-  reducedMotion.addEventListener("change", onReducedMotionChange);
 
   const reveal = () => {
     if (
@@ -62,7 +58,7 @@ export function createPresentationReveal({
         host.dataset.planetVisible = "true";
         motionTimer = window.setTimeout(
           beginMotion,
-          sceneTransitionDuration(reducedMotion),
+          sceneTransitionDuration(prefersReducedMotion),
         );
         startReveal();
       });
@@ -87,12 +83,15 @@ export function createPresentationReveal({
       effectsTimer = 0;
       reveal();
     },
+    setReducedMotion(matches: boolean) {
+      prefersReducedMotion = matches;
+      if (matches && motionTimer) beginMotion();
+    },
     destroy() {
       destroyed = true;
       cancelAnimationFrame(revealFrame);
       clearTimeout(motionTimer);
       clearTimeout(effectsTimer);
-      reducedMotion.removeEventListener("change", onReducedMotionChange);
       delete host.dataset.planetVisible;
     },
   };

@@ -1,4 +1,4 @@
-import { MOTION, clamp } from "../config";
+import { MOBILE_EFFECTS_MAX_WIDTH, MOTION, clamp } from "../config";
 import type { Viewport } from "../types";
 
 export const MAX_STARS = 100;
@@ -41,7 +41,7 @@ export function createStarfield(
       y,
       opacity: (0.65 + strength * 0.23) * mask,
       canTwinkle:
-        width > 600 &&
+        width > MOBILE_EFFECTS_MAX_WIDTH &&
         x > 8 &&
         x < width - 8 &&
         y > 8 &&

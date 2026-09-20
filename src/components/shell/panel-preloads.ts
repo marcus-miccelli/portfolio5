@@ -23,8 +23,6 @@ export function attachPanelPreloads(
     images.forEach(({ image }) => {
       image.fetchPriority = "low";
       image.loading = "eager";
-      if (typeof image.decode === "function")
-        void image.decode().catch(() => {});
     });
   };
 

@@ -12,7 +12,7 @@ import type {
   PlanetWorkerOutput,
 } from "./gpu-types";
 import type { Cell, Viewport } from "../types";
-import { ART } from "../config";
+import { ART, MOBILE_EFFECTS_MAX_WIDTH } from "../config";
 
 const ATLAS_COLUMNS = 10;
 const ATLAS_ROWS = 7;
@@ -578,7 +578,7 @@ async function createRenderer(
         appearance[target + 4] = colors[donor * 3 + 2];
         appearance[target + 5] = 255;
       }
-      updateTwinkle(seconds);
+      if (viewport.width > MOBILE_EFFECTS_MAX_WIDTH) updateTwinkle(seconds);
       gl.bindBuffer(gl.ARRAY_BUFFER, appearanceBuffer);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, appearance);
       gl.useProgram(program);

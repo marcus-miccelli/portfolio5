@@ -1,3 +1,4 @@
+import { media } from "../media";
 import { artworkFromElement } from "./artwork";
 import { createClock } from "./clock";
 import { MOTION } from "./config";
@@ -29,8 +30,8 @@ export function createScene(host: HTMLElement): SceneController {
   const universe = required<HTMLElement>(".universe");
   const fog = createFogField();
   const cancellation = new AbortController();
-  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-  const mobileEffects = matchMedia("(max-width: 600px)");
+  let reducedMotion = media.matches("reducedMotion");
+  let mobileEffects = media.matches("mobileEffects");
   const frameListeners = new Set<(frame: SceneFrame) => void>();
   const fogListeners = new Set<(texture: FogTexture) => void>();
   const presentationListeners = new Set<(state: ScenePresentation) => void>();
@@ -41,7 +42,7 @@ export function createScene(host: HTMLElement): SceneController {
   let frame: SceneFrame = {
     seconds: 0,
     hue: 0,
-    mode: reducedMotion.matches ? "paused" : "playing",
+    mode: reducedMotion ? "paused" : "playing",
   };
   let presentationState: ScenePresentation = {
     revealed: false,
@@ -58,7 +59,7 @@ export function createScene(host: HTMLElement): SceneController {
   let hueTransitionNeedsTarget = false;
   let preserveRenderedFrameInSource = false;
   let userMode: "playing" | "paused" = "playing";
-  let beforeSource: "playing" | "paused" = reducedMotion.matches
+  let beforeSource: "playing" | "paused" = reducedMotion
     ? "paused"
     : "playing";
   const sameViewport = (a: Viewport, b: Viewport) =>
@@ -89,7 +90,7 @@ export function createScene(host: HTMLElement): SceneController {
   const presentation = createPresentationReveal({
     host,
     effectsSettled:
-      document.body.dataset.composition !== "landing" || mobileEffects.matches,
+      document.body.dataset.composition !== "landing" || mobileEffects,
     reducedMotion,
     startReveal() {
       publishPresentation({ revealed: true });
@@ -128,7 +129,7 @@ export function createScene(host: HTMLElement): SceneController {
   function requestFog() {
     if (
       cancellation.signal.aborted ||
-      mobileEffects.matches ||
+      mobileEffects ||
       !fogRaster ||
       fogListeners.size === 0
     )
@@ -151,7 +152,7 @@ export function createScene(host: HTMLElement): SceneController {
       }
       if (
         !isLatest ||
-        mobileEffects.matches ||
+        mobileEffects ||
         fogListeners.size === 0 ||
         !sameViewport(nextField.viewport, viewport)
       )
@@ -185,26 +186,29 @@ export function createScene(host: HTMLElement): SceneController {
     () => clock.setSuspended(document.hidden),
     { signal: cancellation.signal },
   );
-  reducedMotion.addEventListener(
-    "change",
-    (event) => {
-      const nextMode = event.matches ? "paused" : userMode;
+  const unsubscribeReducedMotion = media.subscribe(
+    "reducedMotion",
+    (matches) => {
+      if (matches === reducedMotion) return;
+      reducedMotion = matches;
+      const nextMode = matches ? "paused" : userMode;
       if (clock.mode === "source") beforeSource = nextMode;
       else setSceneMode(nextMode);
+      presentation.setReducedMotion(matches);
     },
-    { signal: cancellation.signal },
   );
-  mobileEffects.addEventListener(
-    "change",
-    (event) => {
+  const unsubscribeMobileEffects = media.subscribe(
+    "mobileEffects",
+    (matches) => {
+      if (matches === mobileEffects) return;
+      mobileEffects = matches;
       field = null;
       requestedFogViewport = null;
       fogRequestVersion++;
-      if (event.matches) {
+      if (matches) {
         presentation.markEffectsSettled();
       } else requestFog();
     },
-    { signal: cancellation.signal },
   );
   measure();
   // The static HTML is already usable; animation enhances that same DOM in place.
@@ -321,6 +325,8 @@ export function createScene(host: HTMLElement): SceneController {
     },
     destroy() {
       cancellation.abort();
+      unsubscribeReducedMotion();
+      unsubscribeMobileEffects();
       clearTimeout(hueTransitionTimer);
       presentation.destroy();
       delete host.dataset.ready;
