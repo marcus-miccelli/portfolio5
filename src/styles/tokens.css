@@ -10,13 +10,6 @@
   --line-strong: #ffffff42;
   --accent: #b4c8ec;
   --scene-accent: #82afe3;
-  --scene-color-hue: calc(212deg + var(--scene-hue, 0deg));
-  --scene-surface: hsl(
-    var(--scene-color-hue) 70% 1% / 0.6
-  );
-  --scene-surface-hover: hsl(
-    var(--scene-color-hue) 70% 1.3% / 0.6
-  );
   --font: "IBM Plex Mono", ui-monospace, monospace;
   --gutter: clamp(24px, 4vw, 80px);
   --safe-gutter-right: max(var(--gutter), env(safe-area-inset-right));
@@ -54,4 +47,11 @@
     var(--background) 91%,
     transparent
   );
+}
+
+.scene-hue-scope {
+  display: contents;
+  --scene-color-hue: calc(212deg + var(--scene-hue, 0deg));
+  --scene-surface: hsl(var(--scene-color-hue) 70% 1% / 0.6);
+  --scene-surface-hover: hsl(var(--scene-color-hue) 70% 1.3% / 0.6);
 }

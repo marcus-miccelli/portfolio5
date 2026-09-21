@@ -28,6 +28,9 @@ export function createScene(host: HTMLElement): SceneController {
   const hueStylesDisabled = query.get("disable-hue-styles") === "1";
   const universeFilterDisabled =
     hueStylesDisabled || query.get("disable-universe-filter") === "1";
+  const hueScope = document.querySelector<HTMLElement>(
+    "[data-scene-hue-scope]",
+  );
   const required = <T extends Element>(selector: string): T => {
     const element = host.querySelector<T>(selector);
     if (!element) throw new Error(`Missing scene element: ${selector}`);
@@ -82,7 +85,7 @@ export function createScene(host: HTMLElement): SceneController {
     if (!universeFilterDisabled)
       universe.style.filter = hue === 0 ? "none" : `hue-rotate(${hue}deg)`;
     if (!hueStylesDisabled)
-      document.documentElement.style.setProperty("--scene-hue", `${hue}deg`);
+      hueScope?.style.setProperty("--scene-hue", `${hue}deg`);
   };
   function paint(seconds: number, mode: SceneMode) {
     const hue = ((seconds % MOTION.hueSeconds) / MOTION.hueSeconds) * 360;
@@ -457,7 +460,7 @@ export function createScene(host: HTMLElement): SceneController {
       fogListeners.clear();
       presentationListeners.clear();
       universe.style.filter = "none";
-      document.documentElement.style.removeProperty("--scene-hue");
+      hueScope?.style.removeProperty("--scene-hue");
     },
   };
 }
