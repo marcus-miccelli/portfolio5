@@ -47,6 +47,10 @@ export function createClock(
       paint(mode === "source" ? 0 : elapsed, mode);
       schedule();
     },
+    stop() {
+      started = false;
+      cancel();
+    },
     setMode(next: SceneMode) {
       if (disposed) return;
       mode = next;

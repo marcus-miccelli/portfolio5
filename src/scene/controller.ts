@@ -59,6 +59,9 @@ export function createScene(host: HTMLElement): SceneController {
   let hueTransitionNeedsTarget = false;
   let preserveRenderedFrameInSource = false;
   let syncTextFallbackAvailability: (() => void) | undefined;
+  let motionRequested = false;
+  let clockRunning = false;
+  let animationAvailable = false;
   let userMode: "playing" | "paused" = "playing";
   let beforeSource: "playing" | "paused" = reducedMotion
     ? "paused"
@@ -88,6 +91,21 @@ export function createScene(host: HTMLElement): SceneController {
     presentationState = { ...presentationState, ...next };
     presentationListeners.forEach((listener) => listener(presentationState));
   };
+  const syncClock = () => {
+    if (motionRequested && animationAvailable) {
+      if (clockRunning) return;
+      clockRunning = true;
+      clock.start();
+      publishPresentation({ moving: true });
+    } else if (clockRunning) {
+      clockRunning = false;
+      clock.stop();
+    }
+  };
+  const setAnimationAvailable = (available: boolean) => {
+    animationAvailable = available;
+    syncClock();
+  };
   const presentation = createPresentationReveal({
     host,
     effectsSettled:
@@ -97,8 +115,8 @@ export function createScene(host: HTMLElement): SceneController {
       publishPresentation({ revealed: true });
     },
     startMotion() {
-      clock.start();
-      publishPresentation({ moving: true });
+      motionRequested = true;
+      syncClock();
     },
   });
   const beginHueTransition = () => {
@@ -226,6 +244,7 @@ export function createScene(host: HTMLElement): SceneController {
       host.dataset.planetRenderer = "static";
       host.dataset.ready = "true";
       preserveRenderedFrameInSource = false;
+      setAnimationAvailable(false);
       presentation.markRendererReady();
     };
 
@@ -261,6 +280,7 @@ export function createScene(host: HTMLElement): SceneController {
         host.dataset.planetRenderer = "text";
         host.dataset.ready = "true";
         preserveRenderedFrameInSource = false;
+        setAnimationAvailable(!mobileEffects);
         presentation.markRendererReady();
         paint(clock.seconds, clock.mode);
       } catch (error) {
@@ -279,6 +299,7 @@ export function createScene(host: HTMLElement): SceneController {
       }
       if (installed) {
         host.dataset.planetRenderer = "text";
+        setAnimationAvailable(true);
         paint(clock.seconds, clock.mode);
       } else void install();
     };
@@ -306,6 +327,7 @@ export function createScene(host: HTMLElement): SceneController {
           host.dataset.planetRenderer = "gpu";
           host.dataset.ready = "true";
           preserveRenderedFrameInSource = true;
+          setAnimationAvailable(true);
           presentation.markRendererReady();
           void gpu.failure.then(() => {
             if (
@@ -318,6 +340,7 @@ export function createScene(host: HTMLElement): SceneController {
             resizePlanet = undefined;
             destroyPlanet = undefined;
             preserveRenderedFrameInSource = false;
+            setAnimationAvailable(false);
             delete host.dataset.planetRenderer;
             configureTextFallback();
           });
