@@ -20,8 +20,9 @@ import type {
 } from "./types";
 
 export function createScene(host: HTMLElement): SceneController {
-  const gpuDisabled =
-    new URLSearchParams(window.location.search).get("disable-gpu") === "1";
+  const query = new URLSearchParams(window.location.search);
+  const gpuDisabled = query.get("disable-gpu") === "1";
+  const gpuFrozen = !gpuDisabled && query.get("freeze-gpu") === "1";
   const required = <T extends Element>(selector: string): T => {
     const element = host.querySelector<T>(selector);
     if (!element) throw new Error(`Missing scene element: ${selector}`);
@@ -330,7 +331,7 @@ export function createScene(host: HTMLElement): SceneController {
             host.dataset.planetRenderer = "gpu";
             host.dataset.ready = "true";
             preserveRenderedFrameInSource = true;
-            setAnimationAvailable(true);
+            setAnimationAvailable(!gpuFrozen);
             presentation.markRendererReady();
             void gpu.failure.then(() => {
               if (
