@@ -53,16 +53,6 @@ orbit-scene[data-hue-transition="true"] .universe {
   user-select: text;
   pointer-events: auto;
 }
-/* TEMP: distinguish the real-text fallback from the GPU canvas on phones. */
-.planet::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 1600px;
-  width: 5760px;
-  height: 32px;
-  background: #ff0000;
-}
 .planet-render {
   position: absolute;
   inset: 0;

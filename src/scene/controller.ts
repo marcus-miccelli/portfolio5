@@ -20,14 +20,6 @@ import type {
 } from "./types";
 
 export function createScene(host: HTMLElement): SceneController {
-  const query = new URLSearchParams(window.location.search);
-  const gpuDisabled = query.get("disable-gpu") === "1";
-  const gpuFrozen = !gpuDisabled && query.get("freeze-gpu") === "1";
-  const gpuFramesFrozen =
-    !gpuDisabled && query.get("freeze-gpu-frames") === "1";
-  const hueStylesDisabled = query.get("disable-hue-styles") === "1";
-  const universeFilterDisabled =
-    hueStylesDisabled || query.get("disable-universe-filter") === "1";
   const hueScope = document.querySelector<HTMLElement>(
     "[data-scene-hue-scope]",
   );
@@ -82,10 +74,8 @@ export function createScene(host: HTMLElement): SceneController {
     a.height === b.height &&
     a.pixelRatio === b.pixelRatio;
   const applyHue = (hue: number) => {
-    if (!universeFilterDisabled)
-      universe.style.filter = hue === 0 ? "none" : `hue-rotate(${hue}deg)`;
-    if (!hueStylesDisabled)
-      hueScope?.style.setProperty("--scene-hue", `${hue}deg`);
+    universe.style.filter = hue === 0 ? "none" : `hue-rotate(${hue}deg)`;
+    hueScope?.style.setProperty("--scene-hue", `${hue}deg`);
   };
   function paint(seconds: number, mode: SceneMode) {
     const hue = ((seconds % MOTION.hueSeconds) / MOTION.hueSeconds) * 360;
@@ -323,48 +313,46 @@ export function createScene(host: HTMLElement): SceneController {
   // The static HTML is already usable; animation enhances that same DOM in place.
   void (async () => {
     try {
-      if (!gpuDisabled) {
-        const { artwork } = artworkFromElement(pre);
-        const gpu = createGpuPlanetRenderer(planetCanvas, artwork);
-        if (gpu) {
-          renderPlanet = gpuFramesFrozen ? undefined : gpu.render;
-          resizePlanet = gpu.resize;
-          destroyPlanet = gpu.destroy;
-          if (viewport.width && viewport.height)
-            gpu.resize(viewport, compose(viewport));
-          gpu.render(clock.seconds);
-          if (await gpu.ready) {
-            if (cancellation.signal.aborted) {
-              gpu.destroy();
-              return;
-            }
-            host.dataset.planetRenderer = "gpu";
-            host.dataset.ready = "true";
-            preserveRenderedFrameInSource = true;
-            setAnimationAvailable(!gpuFrozen);
-            presentation.markRendererReady();
-            void gpu.failure.then(() => {
-              if (
-                cancellation.signal.aborted ||
-                destroyPlanet !== gpu.destroy
-              )
-                return;
-              gpu.destroy();
-              renderPlanet = undefined;
-              resizePlanet = undefined;
-              destroyPlanet = undefined;
-              preserveRenderedFrameInSource = false;
-              setAnimationAvailable(false);
-              delete host.dataset.planetRenderer;
-              configureTextFallback();
-            });
+      const { artwork } = artworkFromElement(pre);
+      const gpu = createGpuPlanetRenderer(planetCanvas, artwork);
+      if (gpu) {
+        renderPlanet = gpu.render;
+        resizePlanet = gpu.resize;
+        destroyPlanet = gpu.destroy;
+        if (viewport.width && viewport.height)
+          gpu.resize(viewport, compose(viewport));
+        gpu.render(clock.seconds);
+        if (await gpu.ready) {
+          if (cancellation.signal.aborted) {
+            gpu.destroy();
             return;
           }
-          gpu.destroy();
-          renderPlanet = undefined;
-          resizePlanet = undefined;
-          destroyPlanet = undefined;
+          host.dataset.planetRenderer = "gpu";
+          host.dataset.ready = "true";
+          preserveRenderedFrameInSource = true;
+          setAnimationAvailable(true);
+          presentation.markRendererReady();
+          void gpu.failure.then(() => {
+            if (
+              cancellation.signal.aborted ||
+              destroyPlanet !== gpu.destroy
+            )
+              return;
+            gpu.destroy();
+            renderPlanet = undefined;
+            resizePlanet = undefined;
+            destroyPlanet = undefined;
+            preserveRenderedFrameInSource = false;
+            setAnimationAvailable(false);
+            delete host.dataset.planetRenderer;
+            configureTextFallback();
+          });
+          return;
         }
+        gpu.destroy();
+        renderPlanet = undefined;
+        resizePlanet = undefined;
+        destroyPlanet = undefined;
       }
 
       if (cancellation.signal.aborted) return;
