@@ -25,6 +25,9 @@ export function createScene(host: HTMLElement): SceneController {
   const gpuFrozen = !gpuDisabled && query.get("freeze-gpu") === "1";
   const gpuFramesFrozen =
     !gpuDisabled && query.get("freeze-gpu-frames") === "1";
+  const hueStylesDisabled = query.get("disable-hue-styles") === "1";
+  const universeFilterDisabled =
+    hueStylesDisabled || query.get("disable-universe-filter") === "1";
   const required = <T extends Element>(selector: string): T => {
     const element = host.querySelector<T>(selector);
     if (!element) throw new Error(`Missing scene element: ${selector}`);
@@ -76,8 +79,10 @@ export function createScene(host: HTMLElement): SceneController {
     a.height === b.height &&
     a.pixelRatio === b.pixelRatio;
   const applyHue = (hue: number) => {
-    universe.style.filter = hue === 0 ? "none" : `hue-rotate(${hue}deg)`;
-    document.documentElement.style.setProperty("--scene-hue", `${hue}deg`);
+    if (!universeFilterDisabled)
+      universe.style.filter = hue === 0 ? "none" : `hue-rotate(${hue}deg)`;
+    if (!hueStylesDisabled)
+      document.documentElement.style.setProperty("--scene-hue", `${hue}deg`);
   };
   function paint(seconds: number, mode: SceneMode) {
     const hue = ((seconds % MOTION.hueSeconds) / MOTION.hueSeconds) * 360;
