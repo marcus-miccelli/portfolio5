@@ -122,28 +122,43 @@ html[data-scene-hue-transition="true"] .social-island {
 @media (max-width: 600px) {
   .social-island {
     position: fixed;
-    top: max(12px, env(safe-area-inset-top));
-    right: auto;
-    left: 50%;
-    z-index: 3;
+    top: auto;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    z-index: 5;
+    gap: 2px;
     width: auto;
-    margin-top: 0;
-    padding: 0;
-    border-radius: 999px;
+    margin: 0;
+    padding: 6px;
+    border-color: #ffffff30;
+    border-radius: 24px;
+    background: color-mix(in srgb, #181923 15%, transparent);
+    box-shadow:
+      0 16px 44px #000000b8,
+      inset 0 1px #ffffff12;
     filter: hue-rotate(var(--scene-hue, 0deg));
-    transform: translateX(-50%);
+    opacity: 0.94;
+    transform: none;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
     will-change: filter;
   }
   .social-island__action {
-    flex: 0 0 40px;
-    width: 40px;
-    height: 40px;
+    flex: 1 1 0;
+    width: auto;
+    height: 44px;
+    border-radius: 14px;
   }
   .social-island__action:first-child {
-    border-radius: 999px 0 0 999px;
+    border-radius: 14px;
   }
   .social-island__action[data-copy-email] {
-    border-radius: 0 999px 999px 0;
+    border-radius: 14px;
+  }
+  .social-island__label {
+    top: auto;
+    bottom: calc(100% + 10px);
   }
 }
 @media (forced-colors: active) {

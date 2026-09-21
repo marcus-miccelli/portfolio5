@@ -132,6 +132,21 @@ html[data-scene-hue-transition="true"] .nav-fog {
   }
 }
 @media (max-width: 600px) {
+  .primary-nav {
+    top: 56%;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    align-items: center;
+    text-align: center;
+    transform: translate(-50%, -50%);
+  }
+  .primary-nav button {
+    transform-origin: center;
+  }
+  .primary-nav button.is-selected {
+    transform: translateY(var(--nav-push-y, 0));
+  }
   .primary-nav[data-fog-visible="true"] .nav-base {
     opacity: 1;
   }
