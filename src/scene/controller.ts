@@ -23,6 +23,8 @@ export function createScene(host: HTMLElement): SceneController {
   const query = new URLSearchParams(window.location.search);
   const gpuDisabled = query.get("disable-gpu") === "1";
   const gpuFrozen = !gpuDisabled && query.get("freeze-gpu") === "1";
+  const gpuFramesFrozen =
+    !gpuDisabled && query.get("freeze-gpu-frames") === "1";
   const required = <T extends Element>(selector: string): T => {
     const element = host.querySelector<T>(selector);
     if (!element) throw new Error(`Missing scene element: ${selector}`);
@@ -317,7 +319,7 @@ export function createScene(host: HTMLElement): SceneController {
         const { artwork } = artworkFromElement(pre);
         const gpu = createGpuPlanetRenderer(planetCanvas, artwork);
         if (gpu) {
-          renderPlanet = gpu.render;
+          renderPlanet = gpuFramesFrozen ? undefined : gpu.render;
           resizePlanet = gpu.resize;
           destroyPlanet = gpu.destroy;
           if (viewport.width && viewport.height)
