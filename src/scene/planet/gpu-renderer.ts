@@ -8,6 +8,7 @@ import type {
 
 export interface GpuPlanetRenderer {
   ready: Promise<boolean>;
+  failure: Promise<string>;
   render(seconds: number): void;
   resize(viewport: Viewport, composition: PlanetComposition): void;
   destroy(): void;
@@ -29,10 +30,15 @@ export function createGpuPlanetRenderer(
     return null;
   }
   let disposed = false;
+  let failed = false;
   let readyTimer = 0;
   let settle: ((ready: boolean) => void) | undefined;
+  let settleFailure: ((reason: string) => void) | undefined;
   const ready = new Promise<boolean>((resolve) => {
     settle = resolve;
+  });
+  const failure = new Promise<string>((resolve) => {
+    settleFailure = resolve;
   });
   const finish = (value: boolean) => {
     clearTimeout(readyTimer);
@@ -40,15 +46,27 @@ export function createGpuPlanetRenderer(
     settle?.(value);
     settle = undefined;
   };
-  const fail = () => finish(false);
-  worker.addEventListener("error", fail, { once: true });
-  worker.addEventListener("messageerror", fail, { once: true });
+  const fail = (reason: string) => {
+    if (disposed || failed) return;
+    failed = true;
+    console.warn(`GPU planet unavailable: ${reason}`);
+    settleFailure?.(reason);
+    settleFailure = undefined;
+    finish(false);
+  };
+  worker.addEventListener(
+    "error",
+    (event) => fail(event.message || "The rendering worker failed"),
+    { once: true },
+  );
+  worker.addEventListener(
+    "messageerror",
+    () => fail("The rendering worker sent an unreadable message"),
+    { once: true },
+  );
   worker.addEventListener("message", (event: MessageEvent<PlanetWorkerOutput>) => {
     if (event.data.type === "ready") finish(true);
-    else if (event.data.type === "failed") {
-      console.warn(`GPU planet unavailable: ${event.data.reason}`);
-      finish(false);
-    }
+    else if (event.data.type === "failed") fail(event.data.reason);
   });
 
   try {
@@ -73,6 +91,7 @@ export function createGpuPlanetRenderer(
   };
   return {
     ready,
+    failure,
     render: (seconds) => post({ type: "frame", seconds }),
     resize: (viewport, composition) =>
       post({ type: "resize", viewport, composition }),
@@ -81,6 +100,7 @@ export function createGpuPlanetRenderer(
       disposed = true;
       worker.terminate();
       finish(false);
+      settleFailure = undefined;
     },
   };
 }

@@ -307,6 +307,20 @@ export function createScene(host: HTMLElement): SceneController {
           host.dataset.ready = "true";
           preserveRenderedFrameInSource = true;
           presentation.markRendererReady();
+          void gpu.failure.then(() => {
+            if (
+              cancellation.signal.aborted ||
+              destroyPlanet !== gpu.destroy
+            )
+              return;
+            gpu.destroy();
+            renderPlanet = undefined;
+            resizePlanet = undefined;
+            destroyPlanet = undefined;
+            preserveRenderedFrameInSource = false;
+            delete host.dataset.planetRenderer;
+            configureTextFallback();
+          });
           return;
         }
         gpu.destroy();

@@ -241,13 +241,15 @@ async function createRenderer(
   canvas: OffscreenCanvas,
   cells: Cell[],
   frameAt: (seconds: number) => Int32Array,
+  fail: (reason: string) => void,
 ): Promise<Renderer> {
-  const planetInstances = cells.filter(
+  const allPlanetInstances = cells.filter(
     (cell) => !(cell.row === 62 && cell.column === 269),
   );
+  let planetInstances = allPlanetInstances;
   const burstOffset = MAX_STARS;
   const planetOffset = burstOffset + burst.length;
-  const instanceCount = planetOffset + planetInstances.length;
+  const instanceCapacity = planetOffset + allPlanetInstances.length;
   const gl = canvas.getContext("webgl2", {
     alpha: true,
     antialias: false,
@@ -258,6 +260,9 @@ async function createRenderer(
     preserveDrawingBuffer: false,
   }) as WebGL2RenderingContext | null;
   if (!gl) throw new Error("WebGL 2 is unavailable in the rendering worker");
+  canvas.addEventListener("webglcontextlost", () => {
+    fail("The WebGL 2 context was lost");
+  });
 
   const program = createProgram(gl);
   const vao = gl.createVertexArray();
@@ -284,11 +289,11 @@ async function createRenderer(
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-  const destinations = new Float32Array(instanceCount * 2);
-  for (let index = 0; index < planetInstances.length; index++) {
+  const destinations = new Float32Array(instanceCapacity * 2);
+  for (let index = 0; index < allPlanetInstances.length; index++) {
     const target = (planetOffset + index) * 2;
-    destinations[target] = planetInstances[index].column;
-    destinations[target + 1] = planetInstances[index].row;
+    destinations[target] = allPlanetInstances[index].column;
+    destinations[target + 1] = allPlanetInstances[index].row;
   }
   gl.bindBuffer(gl.ARRAY_BUFFER, destinationBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, destinations, gl.DYNAMIC_DRAW);
@@ -296,7 +301,7 @@ async function createRenderer(
   gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
   gl.vertexAttribDivisor(1, 1);
 
-  const appearance = new Uint8Array(instanceCount * APPEARANCE_STRIDE);
+  const appearance = new Uint8Array(instanceCapacity * APPEARANCE_STRIDE);
   gl.bindBuffer(gl.ARRAY_BUFFER, appearanceBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, appearance.byteLength, gl.DYNAMIC_DRAW);
   gl.enableVertexAttribArray(2);
@@ -345,6 +350,8 @@ async function createRenderer(
   );
   await font.load();
   scope.fonts.add(font);
+  if (gl.isContextLost())
+    throw new Error("The WebGL 2 context was lost during initialization");
 
   const glyphs = Uint8Array.from(cells, glyphIndex);
   const colors = new Uint8Array(cells.length * 3);
@@ -411,6 +418,25 @@ async function createRenderer(
   let stars: Star[] = [];
   let selectedStar: Star | undefined;
   let positionedCycle = -1;
+
+  const rebuildPlanetInstances = () => {
+    const scale = composition.scale;
+    planetInstances = allPlanetInstances.filter((cell) => {
+      const left = composition.sourceX + cell.column * CELL_WIDTH * scale;
+      const top = composition.sourceY + cell.row * CELL_HEIGHT * scale;
+      return (
+        left + CELL_WIDTH * scale >= 0 &&
+        top + CELL_HEIGHT * scale >= 0 &&
+        left <= viewport.width &&
+        top <= viewport.height
+      );
+    });
+    for (let index = 0; index < planetInstances.length; index++) {
+      const target = (planetOffset + index) * 2;
+      destinations[target] = planetInstances[index].column;
+      destinations[target + 1] = planetInstances[index].row;
+    }
+  };
 
   const rebuildAtlas = () => {
     const sourcePhysicalHeight = CELL_HEIGHT * viewport.pixelRatio;
@@ -491,7 +517,11 @@ async function createRenderer(
 
   const uploadDestinations = () => {
     gl.bindBuffer(gl.ARRAY_BUFFER, destinationBuffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, destinations);
+    gl.bufferSubData(
+      gl.ARRAY_BUFFER,
+      0,
+      destinations.subarray(0, (planetOffset + planetInstances.length) * 2),
+    );
   };
 
   const rebuildStars = () => {
@@ -563,6 +593,7 @@ async function createRenderer(
       canvas.height = Math.max(1, Math.round(viewport.height * ratio));
       gl.viewport(0, 0, canvas.width, canvas.height);
       rebuildAtlas();
+      rebuildPlanetInstances();
       rebuildStars();
     },
     draw(seconds) {
@@ -580,7 +611,12 @@ async function createRenderer(
       }
       if (viewport.width > MOBILE_EFFECTS_MAX_WIDTH) updateTwinkle(seconds);
       gl.bindBuffer(gl.ARRAY_BUFFER, appearanceBuffer);
-      gl.bufferSubData(gl.ARRAY_BUFFER, 0, appearance);
+      const instanceCount = planetOffset + planetInstances.length;
+      gl.bufferSubData(
+        gl.ARRAY_BUFFER,
+        0,
+        appearance.subarray(0, instanceCount * APPEARANCE_STRIDE),
+      );
       gl.useProgram(program);
       gl.bindVertexArray(vao);
       gl.uniform2f(viewportLocation, viewport.width, viewport.height);
@@ -605,11 +641,24 @@ let latestSeconds = 0;
 let frameRequest = 0;
 let initialized = false;
 let reportedReady = false;
+let reportedFailure = false;
+
+const fail = (reason: string) => {
+  if (reportedFailure) return;
+  reportedFailure = true;
+  renderer = undefined;
+  scope.postMessage({ type: "failed", reason });
+};
 
 const draw = () => {
   frameRequest = 0;
   if (!renderer) return;
-  renderer.draw(latestSeconds);
+  try {
+    renderer.draw(latestSeconds);
+  } catch (error) {
+    fail(error instanceof Error ? error.message : "Planet drawing failed");
+    return;
+  }
   if (!reportedReady) {
     reportedReady = true;
     scope.postMessage({ type: "ready" });
@@ -630,11 +679,14 @@ scope.onmessage = ({ data }) => {
     void (async () => {
       try {
         const geometry = createGeometry(data.artwork);
-        renderer = await createRenderer(
+        const nextRenderer = await createRenderer(
           data.canvas,
           geometry.cells,
           geometry.frame,
+          fail,
         );
+        if (reportedFailure) return;
+        renderer = nextRenderer;
         if (latestViewport)
           renderer.resize(
             latestViewport.viewport,
@@ -645,10 +697,7 @@ scope.onmessage = ({ data }) => {
         // and browsers may suppress animation frames for hidden surfaces.
         draw();
       } catch (error) {
-        scope.postMessage({
-          type: "failed",
-          reason: error instanceof Error ? error.message : "Unknown error",
-        });
+        fail(error instanceof Error ? error.message : "Unknown error");
       }
     })();
     return;
