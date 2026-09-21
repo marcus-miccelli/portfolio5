@@ -606,17 +606,18 @@ let frameRequest = 0;
 let initialized = false;
 let reportedReady = false;
 
+const draw = () => {
+  frameRequest = 0;
+  if (!renderer) return;
+  renderer.draw(latestSeconds);
+  if (!reportedReady) {
+    reportedReady = true;
+    scope.postMessage({ type: "ready" });
+  }
+};
+
 const schedule = () => {
   if (!renderer || frameRequest) return;
-  const draw = () => {
-    frameRequest = 0;
-    if (!renderer) return;
-    renderer.draw(latestSeconds);
-    if (!reportedReady) {
-      reportedReady = true;
-      scope.postMessage({ type: "ready" });
-    }
-  };
   frameRequest = scope.requestAnimationFrame
     ? scope.requestAnimationFrame(draw)
     : (setTimeout(draw, 0) as unknown as number);
@@ -639,7 +640,10 @@ scope.onmessage = ({ data }) => {
             latestViewport.viewport,
             latestViewport.composition,
           );
-        schedule();
+        // Readiness must not depend on an animation-frame callback. The
+        // placeholder canvas stays hidden until this first draw reports ready,
+        // and browsers may suppress animation frames for hidden surfaces.
+        draw();
       } catch (error) {
         scope.postMessage({
           type: "failed",

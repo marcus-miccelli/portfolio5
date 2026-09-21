@@ -58,6 +58,7 @@ export function createScene(host: HTMLElement): SceneController {
   let hueTransitionActive = false;
   let hueTransitionNeedsTarget = false;
   let preserveRenderedFrameInSource = false;
+  let syncTextFallbackAvailability: (() => void) | undefined;
   let userMode: "playing" | "paused" = "playing";
   let beforeSource: "playing" | "paused" = reducedMotion
     ? "paused"
@@ -211,13 +212,84 @@ export function createScene(host: HTMLElement): SceneController {
       if (matches) {
         presentation.markEffectsSettled();
       } else requestFog();
+      syncTextFallbackAvailability?.();
     },
   );
+
+  const configureTextFallback = () => {
+    let loading = false;
+    let installed = false;
+
+    // The canonical <pre> is already rendered; mobile must not animate its
+    // thousands of spans when the worker renderer cannot start.
+    const markStaticReady = () => {
+      host.dataset.planetRenderer = "static";
+      host.dataset.ready = "true";
+      preserveRenderedFrameInSource = false;
+      presentation.markRendererReady();
+    };
+
+    const install = async () => {
+      if (
+        loading ||
+        installed ||
+        mobileEffects ||
+        cancellation.signal.aborted
+      )
+        return;
+      loading = true;
+      try {
+        const [{ createGeometry }, { createTextRenderer }] =
+          await Promise.all([
+            import("./planet/geometry"),
+            import("./planet/text-renderer"),
+          ]);
+        if (cancellation.signal.aborted || mobileEffects) return;
+        const { artwork, spans } = artworkFromElement(pre);
+        const geometry = createGeometry(artwork);
+        const render = createTextRenderer(
+          spans,
+          geometry.cells,
+          geometry.animated,
+        );
+        if (cancellation.signal.aborted) return;
+        renderPlanet = (seconds) => {
+          if (!mobileEffects || clock.mode === "source")
+            render(geometry.frame(seconds));
+        };
+        installed = true;
+        host.dataset.planetRenderer = "text";
+        host.dataset.ready = "true";
+        preserveRenderedFrameInSource = false;
+        presentation.markRendererReady();
+        paint(clock.seconds, clock.mode);
+      } catch (error) {
+        if (cancellation.signal.aborted) return;
+        console.warn("Animated text fallback unavailable", error);
+        markStaticReady();
+      } finally {
+        loading = false;
+      }
+    };
+
+    syncTextFallbackAvailability = () => {
+      if (mobileEffects) {
+        markStaticReady();
+        return;
+      }
+      if (installed) {
+        host.dataset.planetRenderer = "text";
+        paint(clock.seconds, clock.mode);
+      } else void install();
+    };
+    syncTextFallbackAvailability();
+  };
+
   measure();
   // The static HTML is already usable; animation enhances that same DOM in place.
   void (async () => {
     try {
-      const { artwork, spans } = artworkFromElement(pre);
+      const { artwork } = artworkFromElement(pre);
       const gpu = createGpuPlanetRenderer(planetCanvas, artwork);
       if (gpu) {
         renderPlanet = gpu.render;
@@ -243,22 +315,8 @@ export function createScene(host: HTMLElement): SceneController {
         destroyPlanet = undefined;
       }
 
-      const [{ createGeometry }, { createTextRenderer }] = await Promise.all([
-        import("./planet/geometry"),
-        import("./planet/text-renderer"),
-      ]);
       if (cancellation.signal.aborted) return;
-      const geometry = createGeometry(artwork);
-      const render = createTextRenderer(
-        spans,
-        geometry.cells,
-        geometry.animated,
-      );
-      renderPlanet = (seconds) => render(geometry.frame(seconds));
-      host.dataset.planetRenderer = "text";
-      host.dataset.ready = "true";
-      preserveRenderedFrameInSource = false;
-      presentation.markRendererReady();
+      configureTextFallback();
     } catch (error) {
       if (cancellation.signal.aborted) return;
       host.dataset.ready = "failed";
@@ -345,6 +403,7 @@ export function createScene(host: HTMLElement): SceneController {
       resizePlanet = undefined;
       destroyPlanet = undefined;
       preserveRenderedFrameInSource = false;
+      syncTextFallbackAvailability = undefined;
       frameListeners.clear();
       fogListeners.clear();
       presentationListeners.clear();
