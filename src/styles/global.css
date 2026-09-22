@@ -309,7 +309,7 @@ html[data-scene-hue-transition="true"] .panel-back {
   body[data-composition="landing"][data-view]:not([data-view="menu"])::before,
   body[data-composition="content"]::before {
     position: fixed;
-    z-index: 2;
+    z-index: 6;
     top: 0;
     right: 0;
     left: 0;
@@ -322,7 +322,7 @@ html[data-scene-hue-transition="true"] .panel-back {
     position: fixed;
     top: var(--mobile-header-top);
     left: max(12px, env(safe-area-inset-left));
-    z-index: 4;
+    z-index: 8;
     display: grid;
     width: 44px;
     height: 44px;
@@ -376,7 +376,7 @@ html[data-scene-hue-transition="true"] .panel-back {
     top: var(--mobile-header-top);
     right: auto;
     left: 50%;
-    z-index: 3;
+    z-index: 7;
     filter: hue-rotate(var(--scene-hue, 0deg));
     transform: translateX(-50%);
     will-change: filter;
