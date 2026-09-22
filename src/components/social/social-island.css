@@ -149,12 +149,29 @@ html[data-scene-hue-transition="true"] .social-island {
     width: auto;
     height: 44px;
     border-radius: 14px;
+    opacity: 0.86;
   }
   .social-island__action:first-child {
     border-radius: 14px;
   }
   .social-island__action[data-copy-email] {
     border-radius: 14px;
+  }
+  .social-island__action svg,
+  .social-island__text-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .social-island__action .social-island__icon--github {
+    width: 22px;
+    height: 22px;
+  }
+  .social-island__action .social-island__icon--email {
+    width: 21px;
+    height: 22px;
+  }
+  .social-island__text-icon {
+    font-size: 22px;
   }
   .social-island__label {
     top: auto;
