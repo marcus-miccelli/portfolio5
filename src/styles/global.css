@@ -313,14 +313,14 @@ html[data-scene-hue-transition="true"] .panel-back {
     top: 0;
     right: 0;
     left: 0;
-    height: 64px;
+    height: var(--mobile-header-height);
     background: var(--background);
     content: "";
     pointer-events: none;
   }
   .panel-back {
     position: fixed;
-    top: max(12px, env(safe-area-inset-top));
+    top: var(--mobile-header-top);
     left: max(12px, env(safe-area-inset-left));
     z-index: 4;
     display: grid;
@@ -373,7 +373,7 @@ html[data-scene-hue-transition="true"] .panel-back {
   }
   .site-name {
     position: fixed;
-    top: max(12px, env(safe-area-inset-top));
+    top: var(--mobile-header-top);
     right: auto;
     left: 50%;
     z-index: 3;
@@ -381,8 +381,14 @@ html[data-scene-hue-transition="true"] .panel-back {
     transform: translateX(-50%);
     will-change: filter;
   }
+  .portfolio-panel,
   .page-content {
-    padding-top: 150px;
+    padding-top: max(
+      clamp(150px, 19vh, 210px),
+      calc(var(--mobile-header-height) + 32px)
+    );
+    padding-right: var(--safe-gutter-right);
+    padding-left: var(--safe-gutter-left);
   }
   .scene-controls {
     display: none;

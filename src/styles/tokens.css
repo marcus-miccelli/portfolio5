@@ -12,6 +12,7 @@
   --scene-accent: #82afe3;
   --font: "IBM Plex Mono", ui-monospace, monospace;
   --gutter: clamp(24px, 4vw, 80px);
+  --safe-gutter-left: max(var(--gutter), env(safe-area-inset-left));
   --safe-gutter-right: max(var(--gutter), env(safe-area-inset-right));
   --reading-width: 48rem;
   --panel-rail-width: 92px;
@@ -26,6 +27,10 @@
   --site-name-line-height: clamp(38.533px, 4.533vw, 47.6px);
   --site-identity-width: clamp(204px, 24vw, 252px);
   --site-identity-gap: 2px;
+  --mobile-header-top: max(12px, env(safe-area-inset-top));
+  --mobile-header-height: calc(
+    var(--mobile-header-top) + max(44px, var(--site-name-line-height)) + 12px
+  );
   --social-island-top: calc(
     var(--site-identity-top) + var(--site-name-line-height) +
       var(--site-identity-gap)
