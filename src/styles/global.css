@@ -306,10 +306,25 @@ html[data-scene-hue-transition="true"] .panel-back {
     visibility 0s linear var(--motion-fast);
 }
 @media (max-width: 600px) {
+  body[data-composition="landing"][data-view]:not([data-view="menu"]),
+  body[data-composition="content"] {
+    position: relative;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  body[data-composition="landing"][data-view]:not([data-view="menu"])
+    .landing-content,
+  body[data-composition="content"] .page-content {
+    position: absolute;
+    inset: var(--mobile-header-height) 0 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
   body[data-composition="landing"][data-view]:not([data-view="menu"])::before,
   body[data-composition="content"]::before {
-    position: fixed;
-    z-index: 6;
+    position: absolute;
+    z-index: 2;
     top: 0;
     right: 0;
     left: 0;
@@ -322,7 +337,7 @@ html[data-scene-hue-transition="true"] .panel-back {
     position: fixed;
     top: var(--mobile-header-top);
     left: max(12px, env(safe-area-inset-left));
-    z-index: 8;
+    z-index: 4;
     display: grid;
     width: 44px;
     height: 44px;
@@ -376,16 +391,24 @@ html[data-scene-hue-transition="true"] .panel-back {
     top: var(--mobile-header-top);
     right: auto;
     left: 50%;
-    z-index: 7;
+    z-index: 3;
     filter: hue-rotate(var(--scene-hue, 0deg));
     transform: translateX(-50%);
     will-change: filter;
   }
+  body[data-composition="landing"][data-view]:not([data-view="menu"])
+    .panel-back,
+  body[data-composition="landing"][data-view]:not([data-view="menu"])
+    .site-name,
+  body[data-composition="content"] .panel-back,
+  body[data-composition="content"] .site-name {
+    position: absolute;
+  }
   .portfolio-panel,
   .page-content {
     padding-top: max(
-      clamp(150px, 19vh, 210px),
-      calc(var(--mobile-header-height) + 32px)
+      32px,
+      calc(clamp(150px, 19vh, 210px) - var(--mobile-header-height))
     );
     padding-right: var(--safe-gutter-right);
     padding-left: var(--safe-gutter-left);
