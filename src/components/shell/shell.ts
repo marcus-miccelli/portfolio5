@@ -5,9 +5,17 @@ interface PortfolioShellState {
   returnsToMenu: boolean;
 }
 
+const projectReferenceParameter = "ref";
+
 function viewFromHash(): ViewId | null {
   const value = location.hash.slice(1);
   return isViewId(value) ? value : null;
+}
+
+function projectReferenceFromUrl(url = new URL(location.href)): string | null {
+  return url.hash === "#projects"
+    ? url.searchParams.get(projectReferenceParameter)
+    : null;
 }
 
 function currentHistoryState(): Record<string, unknown> {
@@ -44,8 +52,19 @@ export function attachPortfolioShell(
   let returnButton: HTMLButtonElement | undefined;
   let focusFrame = 0;
   let closing = false;
+  let arrivalTarget: HTMLElement | null = null;
 
-  const render = (next: ViewId | null, moveFocus = true) => {
+  const clearArrivalTarget = () => {
+    arrivalTarget?.classList.remove("is-arrival-target");
+    arrivalTarget = null;
+  };
+
+  const render = (
+    next: ViewId | null,
+    moveFocus = true,
+    projectReference?: string | null,
+  ) => {
+    clearArrivalTarget();
     if (!next && moveFocus) {
       if (returnButton)
         returnButton.dispatchEvent(
@@ -72,30 +91,53 @@ export function attachPortfolioShell(
     document.dispatchEvent(new Event("portfolio:viewchange"));
     cancelAnimationFrame(focusFrame);
     focusFrame = 0;
-    if (!moveFocus) return;
+    if (!moveFocus && !projectReference) return;
     focusFrame = requestAnimationFrame(() => {
       focusFrame = 0;
-      if (next)
-        root
-          .querySelector<HTMLElement>(
-            `[data-panel="${next}"] [data-panel-focus], [data-panel="${next}"][data-panel-focus]`,
-          )
-          ?.focus({ preventScroll: true });
-      else returnButton?.focus({ preventScroll: true });
+      if (next) {
+        const panel = root.querySelector<HTMLElement>(`[data-panel="${next}"]`);
+        const panelFocusTarget = panel?.matches("[data-panel-focus]")
+          ? panel
+          : panel?.querySelector<HTMLElement>("[data-panel-focus]");
+        if (moveFocus) panelFocusTarget?.focus({ preventScroll: true });
+        const requestedTarget = projectReference
+          ? [
+              ...(panel?.querySelectorAll<HTMLElement>("[data-project-ref]") ??
+                []),
+            ].find(
+              (project) => project.dataset.projectRef === projectReference,
+            )
+          : undefined;
+        if (requestedTarget) {
+          arrivalTarget = requestedTarget;
+          arrivalTarget.classList.add("is-arrival-target");
+          arrivalTarget.scrollIntoView({ block: "center" });
+        }
+      } else returnButton?.focus({ preventScroll: true });
     });
   };
 
-  const open = (next: ViewId, trigger?: HTMLButtonElement) => {
-    if (next === view) return;
+  const open = (
+    next: ViewId,
+    trigger?: HTMLButtonElement,
+    projectReference?: string | null,
+  ) => {
+    if (next === view && !projectReference) return;
     if (trigger && nav.contains(trigger)) returnButton = trigger;
     const returnsToMenu = view ? (shellState()?.returnsToMenu ?? false) : true;
     const state = {
       ...currentHistoryState(),
       portfolioShell: { view: next, returnsToMenu },
     };
-    if (view) history.replaceState(state, "", `#${next}`);
-    else history.pushState(state, "", `#${next}`);
-    render(next);
+    const url = new URL(location.href);
+    url.hash = next;
+    if (next === "projects" && projectReference)
+      url.searchParams.set(projectReferenceParameter, projectReference);
+    else url.searchParams.delete(projectReferenceParameter);
+    const href = `${url.pathname}${url.search}${url.hash}`;
+    if (view) history.replaceState(state, "", href);
+    else history.pushState(state, "", href);
+    render(next, true, projectReference);
   };
   const close = () => {
     if (!view || closing) return;
@@ -105,12 +147,23 @@ export function attachPortfolioShell(
     } else {
       const state = { ...currentHistoryState() };
       delete state.portfolioShell;
-      history.replaceState(state, "", location.pathname + location.search);
+      const url = new URL(location.href);
+      url.hash = "";
+      url.searchParams.delete(projectReferenceParameter);
+      history.replaceState(state, "", `${url.pathname}${url.search}`);
       render(null);
     }
   };
 
   back.addEventListener("click", close, options);
+  root.addEventListener(
+    "animationend",
+    (event) => {
+      if (event.animationName === "project-outline-arrival")
+        clearArrivalTarget();
+    },
+    options,
+  );
 
   document.addEventListener(
     "click",
@@ -125,16 +178,24 @@ export function attachPortfolioShell(
         return;
       const element = event.target instanceof Element ? event.target : null;
       const navTarget = element?.closest<HTMLButtonElement>("[data-nav-view]");
-      const linkTarget = element?.closest<HTMLAnchorElement>('a[href^="#"]');
+      const linkTarget = element?.closest<HTMLAnchorElement>("a[href]");
       const target = navTarget ?? linkTarget;
       if (!target) return;
-      const next =
-        target instanceof HTMLButtonElement
-          ? target.dataset.navView
-          : target.hash.slice(1);
+      const linkUrl = linkTarget ? new URL(linkTarget.href) : null;
+      if (
+        linkUrl &&
+        (linkUrl.origin !== location.origin ||
+          linkUrl.pathname !== location.pathname)
+      )
+        return;
+      const next = navTarget?.dataset.navView ?? linkUrl?.hash.slice(1);
       if (!next || !isViewId(next)) return;
       event.preventDefault();
-      open(next, navTarget ?? undefined);
+      open(
+        next,
+        navTarget ?? undefined,
+        linkUrl ? projectReferenceFromUrl(linkUrl) : null,
+      );
     },
     { capture: true, signal: events.signal },
   );
@@ -157,13 +218,14 @@ export function attachPortfolioShell(
     "popstate",
     () => {
       closing = false;
-      render(viewFromHash());
+      render(viewFromHash(), true, projectReferenceFromUrl());
     },
     options,
   );
-  render(viewFromHash(), false);
+  render(viewFromHash(), false, projectReferenceFromUrl());
   return () => {
     cancelAnimationFrame(focusFrame);
+    clearArrivalTarget();
     events.abort();
   };
 }

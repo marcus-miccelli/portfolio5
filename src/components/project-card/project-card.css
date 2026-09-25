@@ -23,6 +23,7 @@
 }
 
 .project-card {
+  position: relative;
   display: flex;
   height: 100%;
   flex-direction: column;
@@ -30,6 +31,83 @@
   background: var(--scene-surface);
   color: inherit;
   transition: background var(--motion-fast) var(--scene-reveal-easing);
+}
+
+.project-card__outline-shine {
+  --project-outline-shine: hsl(var(--scene-color-hue) 82% 72%);
+  position: absolute;
+  z-index: 1;
+  inset: -1px;
+  background:
+    linear-gradient(var(--project-outline-shine), var(--project-outline-shine))
+      top left / 0 1px no-repeat,
+    linear-gradient(var(--project-outline-shine), var(--project-outline-shine))
+      top right / 1px 0 no-repeat,
+    linear-gradient(var(--project-outline-shine), var(--project-outline-shine))
+      bottom left / 0 1px no-repeat,
+    linear-gradient(var(--project-outline-shine), var(--project-outline-shine))
+      top left / 1px 0 no-repeat;
+  filter: drop-shadow(
+    0 0 3px hsl(var(--scene-color-hue) 82% 72% / 0.4)
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+.project-card.is-arrival-target .project-card__outline-shine {
+  animation: project-outline-arrival 2800ms linear;
+}
+
+@keyframes project-outline-arrival {
+  0% {
+    background-size:
+      0 1px,
+      1px 0,
+      0 1px,
+      1px 0;
+    opacity: 0;
+  }
+  5% {
+    background-size:
+      0 1px,
+      1px 0,
+      0 1px,
+      1px 0;
+    opacity: 0.82;
+  }
+  33% {
+    background-size:
+      87.5% 1px,
+      1px 0,
+      0 1px,
+      1px 100%;
+    opacity: 0.88;
+  }
+  37% {
+    background-size:
+      100% 1px,
+      1px 0,
+      12.5% 1px,
+      1px 100%;
+    opacity: 0.9;
+  }
+  65%,
+  72% {
+    background-size:
+      100% 1px,
+      1px 100%,
+      100% 1px,
+      1px 100%;
+    opacity: 0.92;
+  }
+  100% {
+    background-size:
+      100% 1px,
+      1px 100%,
+      100% 1px,
+      1px 100%;
+    opacity: 0;
+  }
 }
 
 .project-card__heading {
@@ -425,7 +503,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .project-card__link-shine {
+  .project-card__link-shine,
+  .project-card__outline-shine {
     display: none;
   }
 }

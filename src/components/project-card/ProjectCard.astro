@@ -13,7 +13,12 @@ const { title, summary, tags, badge, media: preview, links } = project.data;
   class="project-tile"
   data-project-tags={tags.map((tag) => tag.toLowerCase()).join("|")}
 >
-  <article class="project-card">
+  <article
+    class="project-card"
+    id={`project-${project.id}`}
+    data-project-ref={project.id}
+  >
+    <span class="project-card__outline-shine" aria-hidden="true"></span>
     <div class="project-card__heading">
       <h3>{title}</h3>
       <div

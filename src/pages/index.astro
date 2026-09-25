@@ -18,13 +18,36 @@ const images = (await getCollection("gallery")).sort(
 const projectTags = [...new Set(projects.flatMap(({ data }) => data.tags))].sort(
   (a, b) => a.localeCompare(b),
 );
+const projectIds = new Set(projects.map(({ id }) => id));
+interface AboutTextPart {
+  text: string;
+  projectId?: string;
+}
+function aboutTextParts(text: string): AboutTextPart[] {
+  const parts: AboutTextPart[] = [];
+  const projectLinkPattern = /\[([^\]]+)\]\(project:([a-z0-9][a-z0-9-]*)\)/g;
+  let textStart = 0;
+  for (const match of text.matchAll(projectLinkPattern)) {
+    const matchStart = match.index;
+    const [source, label, projectId] = match;
+    if (!projectIds.has(projectId))
+      throw new Error(`About copy references unknown project "${projectId}".`);
+    if (matchStart > textStart)
+      parts.push({ text: text.slice(textStart, matchStart) });
+    parts.push({ text: label, projectId });
+    textStart = matchStart + source.length;
+  }
+  if (textStart < text.length) parts.push({ text: text.slice(textStart) });
+  return parts;
+}
 const [aboutIntroduction = "", ...aboutBlocks] = aboutCopy
   .trim()
   .replaceAll("\r\n", "\n")
   .split("\n\n");
+const aboutIntroductionParts = aboutTextParts(aboutIntroduction);
 const aboutSections = aboutBlocks.map((block) => {
   const [heading, ...body] = block.split("\n");
-  return { heading, body: body.join(" ") };
+  return { heading, body: aboutTextParts(body.join(" ")) };
 });
 const aboutSlides: AboutSlide[] = [
   {
@@ -108,13 +131,33 @@ const aboutSlides: AboutSlide[] = [
           data-panel-focus
           tabindex="-1"
         >
-          {aboutIntroduction}
+          {
+            aboutIntroductionParts.map(({ text, projectId }) =>
+              projectId ? (
+                <a href={`?ref=${encodeURIComponent(projectId)}#projects`}>
+                  {text}
+                </a>
+              ) : (
+                text
+              ),
+            )
+          }
         </p>
         {
           aboutSections.map(({ heading, body }) => (
             <section class="about-story__section">
               <h3>{heading}</h3>
-              <p>{body}</p>
+              <p>
+                {body.map(({ text, projectId }) =>
+                  projectId ? (
+                    <a href={`?ref=${encodeURIComponent(projectId)}#projects`}>
+                      {text}
+                    </a>
+                  ) : (
+                    text
+                  ),
+                )}
+              </p>
             </section>
           ))
         }

@@ -7,4 +7,4 @@ What interests me
 I'm interested in quantitative trading, mathematics, and making cool software. Outside programming, I make music and enjoy graphic design, tournament poker, and volleyball.
 
 What I'm working on
-This semester, I'm finishing my degree with coursework in time series, stochastic processes, and financial mathematics. Over the summer, I'll work on the C# multiplayer rebuild of Voyager 3 and build my own C++ market engine.
+This semester, I'm finishing my degree with coursework in time series, stochastic processes, and financial mathematics. Over the summer, I'll work on the C# multiplayer rebuild of [voyager3](project:voyager3) and build my own C++ market engine.
