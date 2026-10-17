@@ -53,6 +53,10 @@ orbit-scene[data-hue-transition="true"] .universe {
   user-select: text;
   pointer-events: auto;
 }
+.planet > span {
+  /* Match the worker's cell grid even while the recovered font is unavailable. */
+  position: absolute;
+}
 .planet-render {
   position: absolute;
   inset: 0;

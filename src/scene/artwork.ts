@@ -59,7 +59,8 @@ export function sourceMarkup(data: Artwork): string {
           const color = data.colors[y][x];
           const variant = String(data.variants[y][x]).padStart(2, "0");
           const hidden = y === 62 && x === 269 ? ";visibility:hidden" : "";
-          return `<span style="color:#${color};font-feature-settings:'g0${variant}' 1${hidden}">${char}</span>`;
+          const position = `;left:${x * data.cellWidth}px;top:${y * data.cellHeight}px`;
+          return `<span style="color:#${color};font-feature-settings:'g0${variant}' 1${position}${hidden}">${char}</span>`;
         })
         .join(""),
     )
@@ -86,11 +87,16 @@ export function artworkFromElement(element: HTMLPreElement): {
       if (rows[row][column] === " ") continue;
       const span = spans[spanIndex++];
       const values =
-        /^color:#([\da-f]{6});font-feature-settings:'g0(\d{2})' 1(;visibility:hidden)?$/i.exec(
+        /^color:#([\da-f]{6});font-feature-settings:'g0(\d{2})' 1;left:([\d.]+)px;top:([\d.]+)px(;visibility:hidden)?$/i.exec(
           span?.getAttribute("style") ?? "",
         );
       const shouldBeHidden = row === 62 && column === 269;
-      if (!values || Boolean(values[3]) !== shouldBeHidden)
+      if (
+        !values ||
+        Number(values[3]) !== column * ART.cell.width ||
+        Number(values[4]) !== row * ART.cell.height ||
+        Boolean(values[5]) !== shouldBeHidden
+      )
         throw new Error(`Invalid prerendered artwork cell ${row}:${column}`);
       colors[row][column] = values[1];
       variants[row][column] = Number(values[2]);
