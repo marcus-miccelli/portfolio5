@@ -1,10 +1,13 @@
 I'm Marcus Miccelli, a final-year Computer Science (Advanced) student majoring in Mathematics at Monash University in Victoria, Australia.
 
-What I do
 I'm looking for graduate roles in quantitative trading or software engineering. Before university, I worked as an IT technician at National IT Solutions, and more recently I interned as a backend developer at Jetstar.
 
 What interests me
-I'm interested in quantitative trading, mathematics, and making cool software. Outside programming, I make music and enjoy graphic design, tournament poker, and volleyball.
+- Quantitative trading, mathematics, and making cool software.
+- Music, graphic design, tournament poker, and volleyball.
 
 What I'm working on
-This semester, I'm finishing my degree with coursework in time series, stochastic processes, and financial mathematics. Over the summer, I'll work on the C# multiplayer rebuild of [voyager3](project:voyager3) and build my own C++ market engine.
+- Finishing my degree with coursework in time series, stochastic processes, and financial mathematics.
+- Exploring Rust and multiplayer networking through [assail](project:assail), a fast-paced FPS built with Bevy.
+- Moving to Arch Linux and learning Unix and Neovim.
+- Learning C++ by remaking [voyager3](project:voyager3-raylib) with raylib and building a [trading bot](project:trading-bot).

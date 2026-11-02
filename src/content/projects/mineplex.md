@@ -1,7 +1,7 @@
 ---
 title: Mineplex / BetterPvP
 summary: Open-source contributions to Mineplex's Java server codebase, spanning gameplay fixes, API maintenance, and code-quality improvements.
-tags: [Java, Paper, Minecraft]
+tags: [Java, Paper, Minecraft, Open Source]
 order: 6
 media:
   type: image

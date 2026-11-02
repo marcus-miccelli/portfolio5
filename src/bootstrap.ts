@@ -12,6 +12,7 @@ import { attachSocialIsland } from "./components/social/social-island";
 import { attachPanelPreloads } from "./components/shell/panel-preloads";
 import { attachPortfolioShell } from "./components/shell/shell";
 import { attachProjectFilters } from "./components/project-card/project-filters";
+import { attachProjectScrollbar } from "./components/project-card/project-scrollbar";
 
 function mountPage(): () => void {
   const disposers: (() => void)[] = [];
@@ -51,6 +52,7 @@ function mountPage(): () => void {
     if (shell && scene) disposers.push(attachPanelPreloads(shell, scene));
     if (socialIsland) disposers.push(attachSocialIsland(socialIsland));
     if (projectFilters) disposers.push(attachProjectFilters(projectFilters));
+    if (projectFilters) disposers.push(attachProjectScrollbar(projectFilters));
     if (scene && controls) disposers.push(attachControls(controls, scene));
     const gallery = document.querySelector<HTMLElement>("[data-gallery]");
     if (gallery) disposers.push(attachGallery(gallery));

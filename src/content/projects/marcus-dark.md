@@ -1,7 +1,7 @@
 ---
 title: Marcus Dark
 summary: A near-black, low-glare VS Code theme with an IBM Carbon syntax palette and a companion file-icon theme.
-tags: [VS Code, Theme Design, IBM Carbon]
+tags: [VS Code, Theme Design]
 order: 4
 media:
   type: image

@@ -3,6 +3,7 @@ title: quickNote
 summary: A native Windows sticky-note application with Markdown editing, tabbed windows, and session restoration.
 tags: [C, Win32, Markdown]
 order: 5
+draft: true
 media:
   type: image
   src: /projects/quicknote-generated.webp

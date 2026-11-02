@@ -21,32 +21,34 @@ const { title, summary, tags, badge, media: preview, links } = project.data;
     <span class="project-card__outline-shine" aria-hidden="true"></span>
     <div class="project-card__heading">
       <h3>{title}</h3>
-      <div
-        class="project-card__links"
-        role="group"
-        aria-label={`${title} links`}
-      >
-        {
-          links.map((link) => (
-            <a
-              href={link.href}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`${link.label} — opens in a new tab`}
-              data-label={link.label}
-            >
-              <span class="project-card__link-icon">
-                <ProjectLinkIcon kind={projectLinkKind(link.href, link.kind)} />
-                <span class="project-card__link-shine" aria-hidden="true">
-                  <ProjectLinkIcon
-                    kind={projectLinkKind(link.href, link.kind)}
-                  />
+      {
+        links.length > 0 && (
+          <div
+            class="project-card__links"
+            role="group"
+            aria-label={`${title} links`}
+          >
+            {links.map((link) => (
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`${link.label} — opens in a new tab`}
+                data-label={link.label}
+              >
+                <span class="project-card__link-icon">
+                  <ProjectLinkIcon kind={projectLinkKind(link.href, link.kind)} />
+                  <span class="project-card__link-shine" aria-hidden="true">
+                    <ProjectLinkIcon
+                      kind={projectLinkKind(link.href, link.kind)}
+                    />
+                  </span>
                 </span>
-              </span>
-            </a>
-          ))
-        }
-      </div>
+              </a>
+            ))}
+          </div>
+        )
+      }
     </div>
     <div class="project-card__media">
       <div

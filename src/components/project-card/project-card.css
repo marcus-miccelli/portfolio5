@@ -9,6 +9,10 @@
   flex-direction: column;
 }
 
+.project-scrollbar {
+  display: none;
+}
+
 .project-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -20,6 +24,37 @@
 
 .project-tile {
   min-width: 0;
+}
+
+.project-work-in-progress {
+  margin-top: 48px;
+}
+
+.project-divider {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 0 0 28px;
+  color: hsl(var(--scene-color-hue) 65% 74%);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+}
+
+.project-divider::before,
+.project-divider::after {
+  height: 1px;
+  background: hsl(var(--scene-color-hue) 45% 70% / 0.4);
+  content: "";
+}
+
+.project-divider::before {
+  width: 40px;
+}
+
+.project-divider::after {
+  flex: 1;
 }
 
 .project-card {
@@ -452,15 +487,125 @@
 
 @media (min-width: 1600px) {
   .portfolio-panel--projects {
-    width: min(
-      calc(100% - clamp(220px, 16vw, 320px) - var(--gutter) - 20px),
+    --project-scrollbar-width: 6px;
+    --project-content-edge: min(
+      calc(100vw - clamp(220px, 16vw, 320px) - var(--gutter) - 20px),
       calc(
         var(--panel-rail-width) + var(--project-wide-width) + var(--gutter)
       )
     );
+    --project-sidebar-edge: calc(
+      100vw - var(--safe-gutter-right) - var(--site-identity-width)
+    );
+    --project-scroll-edge: calc(
+      (var(--project-content-edge) + var(--project-sidebar-edge)) / 2
+    );
+    width: var(--project-content-edge);
     margin-right: 0;
     padding-right: 0;
     padding-top: var(--social-island-top);
+    padding-bottom: var(--social-island-top);
+  }
+
+  body[data-view="projects"] .portfolio-panel--projects {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--project-scroll-edge);
+    padding-right: calc(
+      var(--project-scroll-edge) - var(--project-content-edge)
+    );
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--scene-color-hue) 65% 70% / 0.7) transparent;
+  }
+
+  body[data-view="projects"] .portfolio-panel--projects[data-scrollbar-ready] {
+    scrollbar-width: none;
+  }
+
+  .portfolio-panel--projects[data-scrollbar-ready]::-webkit-scrollbar {
+    display: none;
+  }
+
+  .project-scrollbar {
+    position: fixed;
+    top: var(--social-island-top);
+    bottom: 32px;
+    left: calc(var(--project-scroll-edge) - 12px);
+    z-index: 3;
+    display: block;
+    width: 24px;
+    background: transparent;
+    user-select: none;
+  }
+
+  .project-scrollbar__track {
+    position: absolute;
+    inset: 32px 0;
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  .project-scrollbar__arrow {
+    position: absolute;
+    left: 0;
+    display: grid;
+    width: 24px;
+    height: 24px;
+    padding: 3px;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: hsl(var(--scene-color-hue) 65% 70%);
+    opacity: 0.65;
+  }
+
+  .project-scrollbar__arrow--up {
+    top: 0;
+  }
+
+  .project-scrollbar__arrow--down {
+    bottom: 0;
+  }
+
+  .project-scrollbar__arrow svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .project-scrollbar__arrow:hover,
+  .project-scrollbar__arrow:focus-visible {
+    opacity: 1;
+  }
+  .project-scrollbar__arrow:disabled {
+    cursor: default;
+    opacity: 0.2;
+  }
+
+  .project-scrollbar__thumb {
+    --project-thumb-min-height: 120px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: var(--project-scrollbar-width);
+    margin-left: calc(var(--project-scrollbar-width) / -2);
+    border-radius: 999px;
+    background: hsl(var(--scene-color-hue) 65% 70% / 0.7);
+    pointer-events: none;
+  }
+
+  .project-scrollbar:hover .project-scrollbar__thumb,
+  .project-scrollbar:focus-within .project-scrollbar__thumb,
+  .project-scrollbar__track[data-dragging] .project-scrollbar__thumb {
+    background: hsl(var(--scene-color-hue) 80% 78% / 0.95);
   }
 
   .project-filters {

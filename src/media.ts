@@ -4,6 +4,7 @@ export const ABOUT_SLIDESHOW_MIN_WIDTH = 1280;
 
 export const MEDIA = {
   aboutSlideshow: `(min-width: ${ABOUT_SLIDESHOW_MIN_WIDTH}px)`,
+  projectScrollbar: "(min-width: 1600px)",
   mobileEffects: `(max-width: ${MOBILE_EFFECTS_MAX_WIDTH}px)`,
   panelPreloads:
     `(min-width: ${MOBILE_EFFECTS_MAX_WIDTH + 1}px) and ` +

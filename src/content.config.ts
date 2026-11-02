@@ -18,6 +18,7 @@ const projects = defineCollection({
     tags: z.array(z.string()).default([]),
     order: z.number().default(0),
     draft: z.boolean().default(false),
+    status: z.enum(["finished", "in-progress"]).default("finished"),
     badge: z.string().optional(),
     media: z
       .discriminatedUnion("type", [

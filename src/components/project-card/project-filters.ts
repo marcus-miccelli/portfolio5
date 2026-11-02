@@ -1,5 +1,6 @@
 export function attachProjectFilters(root: HTMLElement): () => void {
   const tiles = [...root.querySelectorAll<HTMLElement>(".project-tile")];
+  const groups = [...root.querySelectorAll<HTMLElement>("[data-project-group]")];
   const filters = [
     ...root.querySelectorAll<HTMLButtonElement>("[data-project-filter]"),
   ];
@@ -23,6 +24,9 @@ export function attachProjectFilters(root: HTMLElement): () => void {
         !(tile.dataset.projectTags ?? "")
           .split("|")
           .some((tag) => selectedTags.has(tag));
+    });
+    groups.forEach((group) => {
+      group.hidden = !tiles.some((tile) => group.contains(tile) && !tile.hidden);
     });
     const visible = tiles.filter((tile) => !tile.hidden).length;
     if (announce && status) status.textContent = `${visible} projects shown.`;

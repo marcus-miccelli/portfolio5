@@ -12,6 +12,10 @@ import "../components/gallery/gallery.css";
 const projects = (
   await getCollection("projects", ({ data }) => !data.draft)
 ).sort((a, b) => a.data.order - b.data.order);
+const finishedProjects = projects.filter(({ data }) => data.status === "finished");
+const inProgressProjects = projects.filter(
+  ({ data }) => data.status === "in-progress",
+);
 const images = (await getCollection("gallery")).sort(
   (a, b) => a.data.order - b.data.order,
 );
@@ -40,14 +44,22 @@ function aboutTextParts(text: string): AboutTextPart[] {
   if (textStart < text.length) parts.push({ text: text.slice(textStart) });
   return parts;
 }
-const [aboutIntroduction = "", ...aboutBlocks] = aboutCopy
+const aboutBlocks = aboutCopy
   .trim()
   .replaceAll("\r\n", "\n")
   .split("\n\n");
-const aboutIntroductionParts = aboutTextParts(aboutIntroduction);
-const aboutSections = aboutBlocks.map((block) => {
+const firstAboutSection = aboutBlocks.findIndex((block) => block.includes("\n"));
+const aboutIntroduction = aboutBlocks
+  .slice(0, firstAboutSection < 0 ? aboutBlocks.length : firstAboutSection)
+  .map(aboutTextParts);
+const aboutSectionBlocks =
+  firstAboutSection < 0 ? [] : aboutBlocks.slice(firstAboutSection);
+const aboutSections = aboutSectionBlocks.map((block) => {
   const [heading, ...body] = block.split("\n");
-  return { heading, body: aboutTextParts(body.join(" ")) };
+  return {
+    heading,
+    items: body.map((line) => aboutTextParts(line.replace(/^- /, ""))),
+  };
 });
 const aboutSlides: AboutSlide[] = [
   {
@@ -126,29 +138,15 @@ const aboutSlides: AboutSlide[] = [
     >
       <h2 class="sr-only">About me</h2>
       <article class="about-story">
-        <p
+        <div
           class="about-story__intro"
           data-panel-focus
           tabindex="-1"
         >
           {
-            aboutIntroductionParts.map(({ text, projectId }) =>
-              projectId ? (
-                <a href={`?ref=${encodeURIComponent(projectId)}#projects`}>
-                  {text}
-                </a>
-              ) : (
-                text
-              ),
-            )
-          }
-        </p>
-        {
-          aboutSections.map(({ heading, body }) => (
-            <section class="about-story__section">
-              <h3>{heading}</h3>
+            aboutIntroduction.map((paragraph) => (
               <p>
-                {body.map(({ text, projectId }) =>
+                {paragraph.map(({ text, projectId }) =>
                   projectId ? (
                     <a href={`?ref=${encodeURIComponent(projectId)}#projects`}>
                       {text}
@@ -158,6 +156,30 @@ const aboutSlides: AboutSlide[] = [
                   ),
                 )}
               </p>
+            ))
+          }
+        </div>
+        {
+          aboutSections.map(({ heading, items }) => (
+            <section class="about-story__section">
+              <h3>{heading}</h3>
+              <ul>
+                {
+                  items.map((item) => (
+                    <li>
+                      {item.map(({ text, projectId }) =>
+                        projectId ? (
+                          <a href={`?ref=${encodeURIComponent(projectId)}#projects`}>
+                            {text}
+                          </a>
+                        ) : (
+                          text
+                        ),
+                      )}
+                    </li>
+                  ))
+                }
+              </ul>
             </section>
           ))
         }
@@ -167,6 +189,7 @@ const aboutSlides: AboutSlide[] = [
 
     <section
       class="portfolio-panel portfolio-panel--projects"
+      id="projects-panel"
       data-panel="projects"
       data-preload
       data-panel-focus
@@ -176,9 +199,71 @@ const aboutSlides: AboutSlide[] = [
     >
       <h2 class="sr-only">Projects</h2>
       <div class="project-layout" data-project-filters>
-        <ul class="project-list">
-          {projects.map((project) => <ProjectCard project={project} />)}
-        </ul>
+        {
+          finishedProjects.length > 0 && (
+            <section data-project-group aria-label="Finished projects">
+              <ul class="project-list">
+                {finishedProjects.map((project) => <ProjectCard project={project} />)}
+              </ul>
+            </section>
+          )
+        }
+        {
+          inProgressProjects.length > 0 && (
+            <section
+              class="project-work-in-progress"
+              data-project-group
+              aria-labelledby="projects-in-progress"
+            >
+              <h3 class="project-divider" id="projects-in-progress">in progress</h3>
+              <ul class="project-list">
+                {inProgressProjects.map((project) => <ProjectCard project={project} />)}
+              </ul>
+            </section>
+          )
+        }
+        <div
+          class="project-scrollbar"
+          data-project-scrollbar
+          hidden
+        >
+          <button
+            class="project-scrollbar__arrow project-scrollbar__arrow--up"
+            data-scroll-direction="-1"
+            type="button"
+            aria-label="Scroll projects up"
+            aria-controls="projects-panel"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 15 6-6 6 6"></path>
+            </svg>
+          </button>
+          <div
+            class="project-scrollbar__track"
+            data-project-scrollbar-track
+            role="scrollbar"
+            aria-label="Scroll projects"
+            aria-controls="projects-panel"
+            aria-orientation="vertical"
+            aria-valuemin="0"
+            aria-valuemax="0"
+            aria-valuenow="0"
+            tabindex="0"
+          >
+            <span class="project-scrollbar__thumb" aria-hidden="true"></span>
+          </div>
+          <button
+            class="project-scrollbar__arrow project-scrollbar__arrow--down"
+            data-scroll-direction="1"
+            type="button"
+            aria-label="Scroll projects down"
+            aria-controls="projects-panel"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6"></path>
+            </svg>
+          </button>
+        </div>
         <aside class="project-filters" aria-label="Project filters">
           <div class="project-filters__heading">
             <span>Filter projects</span>

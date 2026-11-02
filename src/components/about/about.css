@@ -8,9 +8,22 @@
   gap: clamp(30px, 4vw, 48px);
 }
 
-.about-story__intro,
-.about-story__section p {
+.about-story__intro p,
+.about-story__section ul {
   margin: 0;
+}
+
+.about-story__intro {
+  display: grid;
+  gap: 1em;
+}
+
+.about-story__section ul {
+  padding-left: 1.2em;
+}
+
+.about-story__section li + li {
+  margin-top: 0.35em;
 }
 
 .about-story__intro:focus {

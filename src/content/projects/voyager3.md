@@ -5,8 +5,8 @@ tags: [Godot, Multiplayer, Game Design]
 order: 3
 media:
   type: image
-  src: /projects/voyager3.webp
-  alt: Three players fighting with ray guns in the voyager3 space arena
+  src: /projects/voyager3-trailer.gif
+  alt: Gameplay excerpt from the voyager3 trailer, showing movement and ray-gun combat in the space arena.
 links:
   - label: GitHub
     href: https://github.com/progress-games/space-jam
@@ -24,3 +24,6 @@ mobility, damage, and fire rate.
 The arena includes jump pads and speed strips, while eliminated players can
 spectate in first person or free-fly around the level. The game was submitted
 to the 2026 MAC Game Jam and is available as a Windows download.
+
+The silent preview uses 00:12–00:24 from the official trailer:
+https://www.youtube.com/watch?v=-96nij01uSE
